@@ -18,7 +18,8 @@ namespace ZakazivanjeApi.Controllers;
 [Authorize(Roles = nameof(UserRole.Admin))]
 [Route("api/stylists")]
 [Produces("application/json")]
-public class StylistsController(IStylistCatalogue catalogue) : ControllerBase
+public class StylistsController(IStylistCatalogue catalogue, ISlotFinder slotFinder)
+    : ControllerBase
 {
     /// <summary>Lists the stylists who can currently be booked.</summary>
     [HttpGet]
@@ -27,6 +28,22 @@ public class StylistsController(IStylistCatalogue catalogue) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<StylistResponse>>> List(
         CancellationToken cancellationToken) =>
         Ok(await catalogue.ListActiveAsync(cancellationToken));
+
+    /// <summary>When this stylist could perform this service on this day.</summary>
+    /// <remarks>
+    /// An empty list is an answer, not a failure: a closed weekday, a retired stylist, a
+    /// withdrawn service and a fully booked day all come back the same way. Only an id nothing
+    /// answers to is a <c>404</c>. Every start returned here is one <c>POST /api/bookings</c>
+    /// accepts, because both run the same rules.
+    /// </remarks>
+    [HttpGet("{id:int}/available-slots")]
+    [AllowAnonymous]
+    [ProducesResponseType<AvailableSlotsResponse>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
+    public async Task<ActionResult<AvailableSlotsResponse>> ListAvailableSlots(
+        int id, [FromQuery] AvailableSlotsQuery query, CancellationToken cancellationToken) =>
+        await slotFinder.FindAsync(id, query, cancellationToken);
 
     /// <summary>Adds a stylist to the list.</summary>
     [HttpPost]

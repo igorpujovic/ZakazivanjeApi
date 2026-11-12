@@ -26,16 +26,6 @@ public class StylistsEndpointTests(SalonApiFactory factory)
     /// </summary>
     private static object ValidStylistBody => new { name = "Nina", isActive = true };
 
-    /// <summary>Adds a stylist as <paramref name="token"/> and returns their id.</summary>
-    private async Task<int> NewStylistAsync(string token, string name)
-    {
-        var response = await _client.PostWithTokenAsync("/api/stylists", token, new { name });
-
-        response.EnsureSuccessStatusCode();
-
-        return (await response.BodyAsync()).GetProperty("id").GetInt32();
-    }
-
     /// <summary>The ids the public list is offering, read without a token.</summary>
     private async Task<IReadOnlyList<int>> ActiveStylistIdsAsync()
     {
@@ -72,7 +62,7 @@ public class StylistsEndpointTests(SalonApiFactory factory)
     public async Task Retires_a_stylist_through_update_and_can_bring_them_back()
     {
         var admin = await _client.AdminTokenAsync();
-        var id = await NewStylistAsync(admin, "Jelena");
+        var id = await _client.NewStylistAsync("Jelena", admin);
 
         var retired = await _client.PutWithTokenAsync(
             $"/api/stylists/{id}", admin, new { name = "Jelena", isActive = false });
@@ -151,7 +141,7 @@ public class StylistsEndpointTests(SalonApiFactory factory)
     public async Task Refuses_an_update_that_does_not_say_whether_the_stylist_stays_on_the_list()
     {
         var admin = await _client.AdminTokenAsync();
-        var id = await NewStylistAsync(admin, "Sara");
+        var id = await _client.NewStylistAsync("Sara", admin);
 
         (await _client.PutWithTokenAsync(
             $"/api/stylists/{id}", admin, new { name = "Sara", isActive = false }))

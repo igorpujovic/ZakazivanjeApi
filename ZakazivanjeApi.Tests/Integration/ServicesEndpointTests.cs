@@ -30,18 +30,6 @@ public class ServicesEndpointTests(SalonApiFactory factory)
     private static object ValidServiceBody =>
         new { name = "Haircut", durationMinutes = 45, price = 2500m, isActive = true };
 
-    /// <summary>Creates a service as <paramref name="token"/> and returns its id.</summary>
-    private async Task<int> NewServiceAsync(
-        string token, string name = "Haircut", int durationMinutes = 45, decimal price = 2500m)
-    {
-        var response = await _client.PostWithTokenAsync(
-            "/api/services", token, new { name, durationMinutes, price });
-
-        response.EnsureSuccessStatusCode();
-
-        return (await response.BodyAsync()).GetProperty("id").GetInt32();
-    }
-
     /// <summary>The ids the public menu is offering, read without a token.</summary>
     private async Task<IReadOnlyList<int>> MenuIdsAsync()
     {
@@ -124,7 +112,7 @@ public class ServicesEndpointTests(SalonApiFactory factory)
     public async Task Drops_a_deactivated_service_from_the_menu_but_still_resolves_it_by_id()
     {
         var admin = await _client.AdminTokenAsync();
-        var id = await NewServiceAsync(admin, "Coloring");
+        var id = await _client.NewServiceAsync("Coloring", admin: admin);
 
         Assert.Contains(id, await MenuIdsAsync());
 
@@ -144,7 +132,7 @@ public class ServicesEndpointTests(SalonApiFactory factory)
     public async Task Withdrawing_a_service_twice_succeeds_both_times()
     {
         var admin = await _client.AdminTokenAsync();
-        var id = await NewServiceAsync(admin, "Perm");
+        var id = await _client.NewServiceAsync("Perm", admin: admin);
 
         var first = await _client.DeleteWithTokenAsync($"/api/services/{id}", admin);
         var second = await _client.DeleteWithTokenAsync($"/api/services/{id}", admin);
@@ -159,7 +147,7 @@ public class ServicesEndpointTests(SalonApiFactory factory)
     public async Task Updates_a_service_and_can_put_a_withdrawn_one_back_on_the_menu()
     {
         var admin = await _client.AdminTokenAsync();
-        var id = await NewServiceAsync(admin, "Trim");
+        var id = await _client.NewServiceAsync("Trim", admin: admin);
 
         (await _client.DeleteWithTokenAsync($"/api/services/{id}", admin))
             .EnsureSuccessStatusCode();
@@ -209,7 +197,7 @@ public class ServicesEndpointTests(SalonApiFactory factory)
     [Fact]
     public async Task Reads_the_menu_and_one_service_without_a_token()
     {
-        var id = await NewServiceAsync(await _client.AdminTokenAsync(), "Beard trim");
+        var id = await _client.NewServiceAsync("Beard trim");
 
         var menu = await _client.GetWithTokenAsync("/api/services", null);
         var one = await _client.GetWithTokenAsync($"/api/services/{id}", null);
@@ -264,7 +252,7 @@ public class ServicesEndpointTests(SalonApiFactory factory)
         string name, int durationMinutes, decimal price, string field)
     {
         var admin = await _client.AdminTokenAsync();
-        var id = await NewServiceAsync(admin, "Highlights");
+        var id = await _client.NewServiceAsync("Highlights", admin: admin);
 
         var response = await _client.PutWithTokenAsync(
             $"/api/services/{id}", admin, new { name, durationMinutes, price, isActive = true });
@@ -279,7 +267,7 @@ public class ServicesEndpointTests(SalonApiFactory factory)
     public async Task Refuses_an_update_that_does_not_say_whether_the_service_stays_on_the_menu()
     {
         var admin = await _client.AdminTokenAsync();
-        var id = await NewServiceAsync(admin, "Keratin");
+        var id = await _client.NewServiceAsync("Keratin", admin: admin);
 
         (await _client.DeleteWithTokenAsync($"/api/services/{id}", admin))
             .EnsureSuccessStatusCode();
@@ -301,7 +289,7 @@ public class ServicesEndpointTests(SalonApiFactory factory)
     public async Task Leaves_the_bookings_taken_against_a_withdrawn_service_scheduled()
     {
         var admin = await _client.AdminTokenAsync();
-        var serviceId = await NewServiceAsync(admin, "Balayage", 120, 9000m);
+        var serviceId = await _client.NewServiceAsync("Balayage", 120, 9000m, admin);
         var bookingId = await BookingAgainstAsync(serviceId);
 
         (await _client.DeleteWithTokenAsync($"/api/services/{serviceId}", admin))

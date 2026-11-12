@@ -61,6 +61,11 @@ builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IServiceCatalogue, ServiceCatalogue>();
 builder.Services.AddScoped<IStylistCatalogue, StylistCatalogue>();
+
+// The rules hold nothing per-request: validated options and a clock, both singletons. One
+// instance, so slot generation and booking cannot end up reading two different sets of hours.
+builder.Services.AddSingleton<BookingRules>();
+builder.Services.AddScoped<ISlotFinder, SlotFinder>();
 builder.Services.AddScoped<DatabaseInitializer>();
 
 var app = builder.Build();

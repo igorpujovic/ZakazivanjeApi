@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Time.Testing;
 using ZakazivanjeApi.Data;
 
 namespace ZakazivanjeApi.Tests.Integration;
@@ -55,6 +56,23 @@ public sealed class SalonApiFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.ConfigureTestServices(services =>
             services.AddControllers().AddApplicationPart(typeof(ProbeController).Assembly));
     }
+
+    /// <summary>
+    /// A client of this same application and this same database, with the clock the booking
+    /// rules read pinned to <paramref name="now"/>. It is a host of its own, so the shared one
+    /// every other test uses keeps the real clock — which matters, because a frozen clock in a
+    /// future year would make the tokens this suite mints fail validation.
+    /// </summary>
+    /// <param name="now">
+    /// Salon wall-clock. The fake provider's local zone is UTC, so this is exactly what the
+    /// rules will read as "now" (ADR-0001).
+    /// </param>
+    public HttpClient CreateClientAt(DateTime now) =>
+        WithWebHostBuilder(builder =>
+            builder.ConfigureTestServices(services =>
+                services.AddSingleton<TimeProvider>(
+                    new FakeTimeProvider(new DateTimeOffset(now, TimeSpan.Zero)))))
+            .CreateClient();
 
     /// <summary>
     /// Runs <paramref name="work"/> against the application's own database, for the few facts

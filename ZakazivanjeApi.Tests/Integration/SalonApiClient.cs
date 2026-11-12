@@ -41,6 +41,40 @@ public static class SalonApiClient
         return await client.TokenForAsync(email, GoodPassword);
     }
 
+    /// <summary>
+    /// Puts a stylist on the list and returns their id. Pass <paramref name="admin"/> when the
+    /// caller already holds a token; the extra login otherwise is cheaper than the token being
+    /// threaded through helpers that are not about authentication.
+    /// </summary>
+    public static async Task<int> NewStylistAsync(
+        this HttpClient client, string name = "Nina", string? admin = null)
+    {
+        var response = await client.PostWithTokenAsync(
+            "/api/stylists", admin ?? await client.AdminTokenAsync(), new { name });
+
+        response.EnsureSuccessStatusCode();
+
+        return (await response.BodyAsync()).GetProperty("id").GetInt32();
+    }
+
+    /// <summary>Puts a service on the menu and returns its id, on the same terms.</summary>
+    public static async Task<int> NewServiceAsync(
+        this HttpClient client,
+        string name = "Haircut",
+        int durationMinutes = 45,
+        decimal price = 2500m,
+        string? admin = null)
+    {
+        var response = await client.PostWithTokenAsync(
+            "/api/services",
+            admin ?? await client.AdminTokenAsync(),
+            new { name, durationMinutes, price });
+
+        response.EnsureSuccessStatusCode();
+
+        return (await response.BodyAsync()).GetProperty("id").GetInt32();
+    }
+
     /// <summary>Logs the seeded administrator in and returns their token.</summary>
     public static Task<string> AdminTokenAsync(this HttpClient client) =>
         client.TokenForAsync(SalonApiFactory.AdminEmail, SalonApiFactory.AdminPassword);
