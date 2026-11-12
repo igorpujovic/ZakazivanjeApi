@@ -56,6 +56,18 @@ public sealed class SalonApiFactory : WebApplicationFactory<Program>, IAsyncLife
             services.AddControllers().AddApplicationPart(typeof(ProbeController).Assembly));
     }
 
+    /// <summary>
+    /// Runs <paramref name="work"/> against the application's own database, for the few facts
+    /// no endpoint exposes yet. Used to set up a booking before the booking endpoints exist,
+    /// and to read one back afterwards.
+    /// </summary>
+    public async Task<T> WithDbAsync<T>(Func<SalonDbContext, Task<T>> work)
+    {
+        await using var scope = Services.CreateAsyncScope();
+
+        return await work(scope.ServiceProvider.GetRequiredService<SalonDbContext>());
+    }
+
     /// <summary>Starts the host, which is what creates and migrates the database.</summary>
     public Task InitializeAsync()
     {

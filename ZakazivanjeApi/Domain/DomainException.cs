@@ -17,6 +17,10 @@ public class DomainException(int statusCode, string code, string message) : Exce
     public static DomainException Conflict(string code, string message) =>
         new(StatusCodes.Status409Conflict, code, message);
 
+    /// <summary>Nothing here answers to that identifier.</summary>
+    public static DomainException NotFound(string code, string message) =>
+        new(StatusCodes.Status404NotFound, code, message);
+
     /// <summary>The caller has not proved who they are, or proved it wrongly.</summary>
     public static DomainException Unauthorized(string code, string message) =>
         new(StatusCodes.Status401Unauthorized, code, message);

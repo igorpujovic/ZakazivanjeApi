@@ -59,6 +59,8 @@ builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddSingleton<IPasswordHasher<User>, PasswordHasher<User>>();
 builder.Services.AddSingleton<ITokenService, JwtTokenService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IServiceCatalogue, ServiceCatalogue>();
+builder.Services.AddScoped<IStylistCatalogue, StylistCatalogue>();
 builder.Services.AddScoped<DatabaseInitializer>();
 
 var app = builder.Build();

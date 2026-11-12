@@ -7,8 +7,9 @@ namespace ZakazivanjeApi.Tests.Integration;
 
 /// <summary>
 /// Endpoints that exist only in the test host, to prove the authentication and authorization
-/// wiring before issue 03 brings the first real protected route. They are added to the running
-/// application as an MVC application part, so nothing test-shaped ever ships in the API.
+/// wiring on its own, apart from any real route and from whatever else could refuse a request.
+/// They are added to the running application as an MVC application part, so nothing
+/// test-shaped ever ships in the API.
 /// </summary>
 /// <remarks>
 /// Without these, the <c>AddAuthentication</c> / <c>AddAuthorization</c> wiring, the pipeline
@@ -39,7 +40,7 @@ public class ProbeController : ControllerBase
         isAdmin = User.IsInRole(nameof(UserRole.Admin)),
     });
 
-    /// <summary>Admins only, which is the shape every admin route in issue 03 onwards will take.</summary>
+    /// <summary>Admins only, which is the shape the catalogue admin routes take.</summary>
     [HttpGet("admin-only")]
     [Authorize(Roles = nameof(UserRole.Admin))]
     public IActionResult AdminOnly() => Ok();
