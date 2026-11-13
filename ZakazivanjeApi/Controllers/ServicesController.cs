@@ -43,8 +43,8 @@ public class ServicesController(IServiceCatalogue catalogue) : ControllerBase
     [HttpPost]
     [ProducesResponseType<ServiceResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<ServiceResponse>> Create(
         CreateServiceRequest request, CancellationToken cancellationToken)
     {
@@ -62,8 +62,8 @@ public class ServicesController(IServiceCatalogue catalogue) : ControllerBase
     [HttpPut("{id:int}")]
     [ProducesResponseType<ServiceResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<ServiceResponse>> Update(
         int id, UpdateServiceRequest request, CancellationToken cancellationToken) =>
@@ -78,8 +78,8 @@ public class ServicesController(IServiceCatalogue catalogue) : ControllerBase
     /// </remarks>
     [HttpDelete("{id:int}")]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Deactivate(int id, CancellationToken cancellationToken)
     {

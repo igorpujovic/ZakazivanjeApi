@@ -34,8 +34,8 @@ public class BookingsController(IBookingService bookings) : ControllerBase
     [Authorize(Roles = nameof(UserRole.Client))]
     [ProducesResponseType<BookingResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<BookingResponse>> Create(
@@ -58,8 +58,8 @@ public class BookingsController(IBookingService bookings) : ControllerBase
     [HttpGet("my")]
     [Authorize(Roles = nameof(UserRole.Client))]
     [ProducesResponseType<IReadOnlyList<BookingResponse>>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<BookingResponse>>> Mine(
         CancellationToken cancellationToken) =>
         Ok(await bookings.ListForClientAsync(Caller.From(User).Id, cancellationToken));
@@ -76,8 +76,8 @@ public class BookingsController(IBookingService bookings) : ControllerBase
     [Authorize(Roles = nameof(UserRole.Admin))]
     [ProducesResponseType<PagedResponse<BookingResponse>>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<PagedResponse<BookingResponse>>> List(
         [FromQuery] BookingsQuery query, CancellationToken cancellationToken) =>
         Ok(await bookings.ListAsync(query, cancellationToken));
@@ -94,7 +94,7 @@ public class BookingsController(IBookingService bookings) : ControllerBase
     [HttpPut("{id:int}/cancel")]
     [Authorize]
     [ProducesResponseType<BookingResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<BookingResponse>> Cancel(
@@ -111,8 +111,8 @@ public class BookingsController(IBookingService bookings) : ControllerBase
     [HttpPut("{id:int}/complete")]
     [Authorize(Roles = nameof(UserRole.Admin))]
     [ProducesResponseType<BookingResponse>(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status409Conflict)]
     public async Task<ActionResult<BookingResponse>> Complete(

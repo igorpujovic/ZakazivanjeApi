@@ -3,9 +3,12 @@
 REST API for a single hair salon. Clients browse services and stylists, see available times
 and book or cancel appointments. Admins manage the catalogue and every booking.
 
-The specification and the design decisions behind it live in
-[`.scratch/salon-booking/spec.md`](.scratch/salon-booking/spec.md), `GLOSSARY.md` and
-[`docs/adr/`](docs/adr).
+**Start with [`GLOSSARY.md`](GLOSSARY.md) and [`docs/adr/`](docs/adr).** The glossary is the
+vocabulary the code is written in — client, stylist, slot, active, scheduled — and the eight
+ADRs are where the decisions that are not obvious from the code are argued: local wall-clock
+time, a serializable transaction for overlap, no ASP.NET Core Identity, soft delete, one error
+envelope. Nobody finds those by reading the controllers. The specification they implement is
+[`.scratch/salon-booking/spec.md`](.scratch/salon-booking/spec.md).
 
 Stack: C#, ASP.NET Core Web API, EF Core, SQL Server, xUnit. Targets `net11.0`.
 
@@ -18,6 +21,19 @@ Stack: C#, ASP.NET Core Web API, EF Core, SQL Server, xUnit. Targets `net11.0`.
 
 Booking rules live in `Domain/` as classes that touch neither EF Core nor the database, so
 they can be tested without one (ADR-0007).
+
+## Prerequisites
+
+- **.NET 11 SDK.** `dotnet --version` should report `11.*`.
+- **SQL Server LocalDB**, as `(localdb)\mssqllocaldb`. It ships with the *Data storage and
+  processing* workload in the Visual Studio Installer, or on its own as SqlLocalDB. Check with
+  `sqllocaldb info mssqllocaldb`. Any other SQL Server will do — point the connection string at
+  it. The integration tests need it too, and they name the instance themselves.
+- **`dotnet-ef`**, only to apply migrations by hand outside Development:
+
+  ```bash
+  dotnet tool install --global dotnet-ef
+  ```
 
 ## Setup
 
@@ -50,12 +66,18 @@ lives in `appsettings.json`.
 
 ### 2. Database
 
-The connection string is `ConnectionStrings:SalonDb`, pointing at LocalDB in
-`appsettings.Development.json`. In Development the application applies pending migrations at
-startup. Elsewhere, apply them yourself:
+The connection string is `ConnectionStrings:SalonDb`. It is set, to LocalDB, in
+`appsettings.Development.json` only — so **running as anything other than Development means
+supplying it yourself**, as `ConnectionStrings__SalonDb`, alongside the three keys above. Which
+environment you are is `ASPNETCORE_ENVIRONMENT`; `dotnet run` takes the `http` profile from
+`Properties/launchSettings.json`, which sets it to Development.
+
+In Development the application applies pending migrations at startup. Elsewhere, apply them
+yourself:
 
 ```bash
-dotnet ef database update --project ZakazivanjeApi
+ConnectionStrings__SalonDb="<your connection string>" \
+  dotnet ef database update --project ZakazivanjeApi
 ```
 
 Then seed: starting the application creates the configured administrator if no user holds
@@ -70,6 +92,107 @@ table and the start will fail.
 ```bash
 dotnet run --project ZakazivanjeApi
 ```
+
+Then open <http://localhost:5056/scalar> — see [API docs](#api-docs) below.
+
+## Endpoints
+
+Sixteen. `Client + Admin` means both, on different terms.
+
+| Method | Route                                                 | Access         | Purpose                        |
+| ------ | ----------------------------------------------------- | -------------- | ------------------------------ |
+| POST   | `/api/auth/register`                                  | Public         | Create a client account        |
+| POST   | `/api/auth/login`                                     | Public         | Return a JWT                   |
+| GET    | `/api/services`                                       | Public         | List active services           |
+| GET    | `/api/services/{id}`                                  | Public         | Get one service, active or not |
+| POST   | `/api/services`                                       | Admin          | Create a service               |
+| PUT    | `/api/services/{id}`                                  | Admin          | Update a service               |
+| DELETE | `/api/services/{id}`                                  | Admin          | Deactivate a service           |
+| GET    | `/api/stylists`                                       | Public         | List active stylists           |
+| POST   | `/api/stylists`                                       | Admin          | Create a stylist               |
+| PUT    | `/api/stylists/{id}`                                  | Admin          | Update or deactivate           |
+| GET    | `/api/stylists/{id}/available-slots?date=&serviceId=` | Public         | Free starts for a day          |
+| POST   | `/api/bookings`                                       | Client         | Book an appointment            |
+| GET    | `/api/bookings/my`                                    | Client         | List own bookings              |
+| PUT    | `/api/bookings/{id}/cancel`                           | Client + Admin | Cancel a booking               |
+| GET    | `/api/bookings?date=&stylistId=&page=&pageSize=`      | Admin          | List all bookings              |
+| PUT    | `/api/bookings/{id}/complete`                         | Admin          | Mark completed                 |
+
+Pagination returns `{ items, page, pageSize, totalCount, totalPages }`, defaulting to
+`page=1, pageSize=20`, with `pageSize` capped at 100 rather than refused — the response says
+which size was used. Ordering is `Start` then `Id`; without the tiebreak, equal-start bookings
+can swap pages and a row gets duplicated or skipped.
+
+Nothing reads one booking back by id, so `POST /api/bookings` sends no `Location` header. A
+header pointing at a route that does not exist is worse than no header.
+
+## Errors
+
+Every refusal is `ProblemDetails` (RFC 9457), whichever layer refused it, and carries a
+machine-readable `code` (ADR-0008):
+
+```json
+{
+  "type": "https://tools.ietf.org/html/rfc9110#section-15.5.10",
+  "title": "Conflict",
+  "status": 409,
+  "detail": "That stylist already has a booking overlapping this time.",
+  "code": "booking_overlap",
+  "traceId": "00-f9c86331fe0ba6a87f1167a02c535b8e-5f722d2b59e9157e-02"
+}
+```
+
+**Branch on `code`. The `title` and `detail` are prose for a human and may be reworded at any
+time.** A `400` carries `errors` with a field-by-field account on top of this envelope.
+
+| Status | When                                                     | Codes                                                                                                                                                                    |
+| ------ | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `400`  | The request is not well-formed                           | `invalid_request`                                                                                                                                                          |
+| `401`  | No token, a bad one, or wrong credentials                | `unauthorized`, `invalid_credentials`, `invalid_token`                                                                                                                     |
+| `403`  | A real caller without the role                           | `forbidden`                                                                                                                                                                |
+| `404`  | No such route, or nothing the caller may see             | `not_found`, `booking_not_found`, `service_not_found`, `stylist_not_found`                                                                                                 |
+| `405`  | Right route, wrong method                                | `method_not_allowed`                                                                                                                                                       |
+| `409`  | Well-formed, but the current state forbids it           | `booking_overlap`, `booking_contended`, `outside_working_hours`, `start_in_past`, `stylist_inactive`, `service_inactive`, `cancellation_too_late`, `booking_already_cancelled`, `booking_already_completed`, `booking_already_scheduled`, `booking_not_started`, `email_taken` |
+| `415`  | A body the endpoint cannot read                          | `unsupported_media_type`                                                                                                                                                   |
+| `500`  | Something unforeseen                                     | `internal_error`                                                                                                                                                           |
+
+Anything not listed above still carries a `code`, derived as `http_<status>`, so a client
+branching on the field never meets a response without one.
+
+A `500` carries no `detail`: an unhandled exception's message is the one string that could name
+a table or a connection string, so it is logged server-side and dropped from the body. No stack
+trace, exception message or connection string ever reaches a response body. The `errors` of a
+`400` are the framework's own model-binding complaints, which can name a .NET type — those are
+about the request you sent, and nothing about the server.
+
+A booking belonging to someone else is a `404`, not a `403` — whether it exists is not the
+caller's business.
+
+## API docs
+
+`Microsoft.AspNetCore.OpenApi` generates the document; [Scalar](https://scalar.com) is the UI,
+since Swashbuckle left the template in .NET 9. Both are mapped in Development only — the
+document describes every route the API has, which is for a reader running it locally and not
+for the public internet.
+
+| Where                | What                     |
+| -------------------- | ------------------------ |
+| `/scalar`            | The reference and client |
+| `/openapi/v1.json`   | The document itself      |
+
+![The Scalar reference, with the bearer token box](docs/images/scalar-overview.jpg)
+
+Log in at `POST /api/auth/login`, paste the `accessToken` into **Bearer Token**, and every
+locked endpoint is yours to try. Public endpoints are not locked, so it is clear at a glance
+which need it.
+
+![POST /api/bookings, with its documented responses](docs/images/scalar-create-booking.jpg)
+
+![A booking made through Scalar](docs/images/scalar-booking-created.jpg)
+
+Sending the same request twice shows the envelope on the way back:
+
+![The same request refused with booking_overlap](docs/images/scalar-conflict.jpg)
 
 ## Working hours
 
@@ -97,11 +220,6 @@ injected `TimeProvider`, never `DateTime.Now`.
 ## Authentication
 
 Hand-written JWT; ASP.NET Core Identity is deliberately not adopted (ADR-0006).
-
-| Method | Route                | Access | Returns                                     |
-| ------ | -------------------- | ------ | ------------------------------------------- |
-| POST   | `/api/auth/register` | Public | `201` and the new client                    |
-| POST   | `/api/auth/login`    | Public | `200`, a bearer token and who it belongs to |
 
 Registration always creates a **client**. There is no way to ask for a role, because a role
 field in that payload would let anyone make themselves an admin; the first admin is seeded at

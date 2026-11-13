@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
+using Scalar.AspNetCore;
 using ZakazivanjeApi.Data;
 using ZakazivanjeApi.Domain;
 using ZakazivanjeApi.Entities;
@@ -10,10 +11,22 @@ using ZakazivanjeApi.Services;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddOpenApi();
 
-builder.Services.AddProblemDetails();
+// The document Scalar renders. The transformers put the bearer scheme in it and mark which
+// operations need one, which is what lets a reader log in and exercise the protected endpoints
+// from the browser rather than from curl.
+builder.Services.AddOpenApi(options =>
+{
+    options.AddDocumentTransformer<DocumentInfoTransformer>();
+    options.AddDocumentTransformer<BearerSecurityTransformer>();
+    options.AddOperationTransformer<BearerRequirementTransformer>();
+    options.AddOperationTransformer<ServerErrorResponseTransformer>();
+    options.AddSchemaTransformer<ProblemCodeSchemaTransformer>();
+});
+
+// One envelope for every failure, whichever layer refused the request (ADR-0008).
+builder.Services.AddProblemDetails(options =>
+    options.CustomizeProblemDetails = ProblemEnvelope.Customize);
 builder.Services.AddExceptionHandler<DomainExceptionHandler>();
 
 builder.Services.AddDbContext<SalonDbContext>(options =>
@@ -95,9 +108,22 @@ using (var scope = app.Services.CreateScope())
 // Configure the HTTP request pipeline.
 app.UseExceptionHandler();
 
+// The statuses no handler ever sees — a 401 from authentication, a 403 from a role, a 404 from
+// routing — arrive here with the status set and the body still empty. This is what gives them the
+// same ProblemDetails envelope as everything else (ADR-0008).
+app.UseStatusCodePages();
+
+// Development only, both of them: the document describes every route the API has, and that is
+// something to hand a reader running this locally rather than the public internet.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+
+    // Microsoft.AspNetCore.OpenApi generates the document but ships no UI, Swashbuckle having
+    // left the template in .NET 9. Scalar is the UI.
+    app.MapScalarApiReference(options => options
+        .WithTitle(DocumentInfoTransformer.Title)
+        .AddPreferredSecuritySchemes(BearerSecurityTransformer.SchemeName));
 }
 
 app.UseHttpsRedirection();

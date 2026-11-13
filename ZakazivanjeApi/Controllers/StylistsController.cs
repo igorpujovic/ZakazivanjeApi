@@ -49,8 +49,8 @@ public class StylistsController(IStylistCatalogue catalogue, ISlotFinder slotFin
     [HttpPost]
     [ProducesResponseType<StylistResponse>(StatusCodes.Status201Created)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<StylistResponse>> Create(
         CreateStylistRequest request, CancellationToken cancellationToken)
     {
@@ -71,8 +71,8 @@ public class StylistsController(IStylistCatalogue catalogue, ISlotFinder slotFin
     [HttpPut("{id:int}")]
     [ProducesResponseType<StylistResponse>(StatusCodes.Status200OK)]
     [ProducesResponseType<ValidationProblemDetails>(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     [ProducesResponseType<ProblemDetails>(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<StylistResponse>> Update(
         int id, UpdateStylistRequest request, CancellationToken cancellationToken) =>
