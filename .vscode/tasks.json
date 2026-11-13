@@ -1,0 +1,93 @@
+{
+  "version": "2.0.0",
+
+  // Shell tasks throughout, with an explicit cwd, rather than the npm and dotnet task
+  // providers: the frontend lives in web/ and the API in a solution at the root, and being
+  // able to read where a task actually runs is worth more here than brevity.
+  "tasks": [
+    {
+      "label": "api: build",
+      "type": "shell",
+      "command": "dotnet build ZakazivanjeApi/ZakazivanjeApi.csproj",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": "$msCompile",
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      // The http profile, because it binds 5056 alone - which is what web/vite.config.ts
+      // proxies to. The https profile would also bind 7173 and redirect, and the proxy does
+      // not follow it.
+      "label": "api: run",
+      "type": "shell",
+      "command": "dotnet run --project ZakazivanjeApi --launch-profile http",
+      "options": { "cwd": "${workspaceFolder}" },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "dotnet",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Building|Starting",
+          "endsPattern": "Now listening on"
+        }
+      },
+      "presentation": { "group": "dev", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "api: test",
+      "type": "shell",
+      "command": "dotnet test ZakazivanjeApi.Tests/ZakazivanjeApi.Tests.csproj",
+      "options": { "cwd": "${workspaceFolder}" },
+      "problemMatcher": "$msCompile",
+      "group": { "kind": "test", "isDefault": true }
+    },
+    {
+      "label": "web: dev",
+      "type": "shell",
+      "command": "npm run dev",
+      "options": { "cwd": "${workspaceFolder}/web" },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "vite",
+        "pattern": { "regexp": "^$" },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE v",
+          "endsPattern": "ready in"
+        }
+      },
+      "presentation": { "group": "dev", "panel": "dedicated", "clear": true }
+    },
+    {
+      "label": "web: test",
+      "type": "shell",
+      "command": "npm test",
+      "options": { "cwd": "${workspaceFolder}/web" },
+      "problemMatcher": []
+    },
+    {
+      "label": "web: lint",
+      "type": "shell",
+      "command": "npm run lint",
+      "options": { "cwd": "${workspaceFolder}/web" },
+      "problemMatcher": []
+    },
+    {
+      // tsc -b across the three project references, then the Vite build. The typecheck is the
+      // part worth running often; it is also the part the editor can disagree with while
+      // TypeScript 7 support is an extension.
+      "label": "web: build",
+      "type": "shell",
+      "command": "npm run build",
+      "options": { "cwd": "${workspaceFolder}/web" },
+      "problemMatcher": []
+    },
+    {
+      // Development is two processes. This is both of them, in parallel, in their own panels.
+      "label": "dev: api + web",
+      "dependsOn": ["api: run", "web: dev"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    }
+  ]
+}

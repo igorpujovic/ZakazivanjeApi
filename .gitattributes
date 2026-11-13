@@ -1,0 +1,19 @@
+# Line endings, decided here rather than left to each clone's core.autocrlf.
+#
+# The repository stores LF. What lands in a working tree is per-pattern below, and the
+# normalisation on the way in is unconditional - so setting this now cannot show up as a
+# repository full of modified files.
+
+* text=auto
+
+# Visual Studio rewrites the solution with CRLF whatever git would prefer.
+*.sln text eol=crlf
+
+# The frontend's toolchain is LF-native, and the diff on a regenerated schema.d.ts should
+# never be able to turn into a line-ending diff.
+web/** text=auto eol=lf
+
+# Bytes. (web/public/favicon.svg is markup, and stays text.)
+*.jpg binary
+*.png binary
+*.ico binary

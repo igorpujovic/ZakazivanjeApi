@@ -1,0 +1,43 @@
+{
+  // Tailwind v4 has no tailwind.config.js. The palette lives in @theme in web/src/index.css,
+  // and opened at the repository root the extension cannot find that by itself.
+  "tailwindCSS.experimental.configFile": "web/src/index.css",
+
+  // Class strings are composed in helpers - AppShell's linkClass, the SlotGrid's cells - so
+  // completions are wanted in .ts as well as .tsx.
+  "tailwindCSS.includeLanguages": {
+    "typescript": "javascript",
+    "typescriptreact": "javascript"
+  },
+
+  // The linter's config is at web/.oxlintrc.json rather than the repository root.
+  // `oxc.configPath` is deliberately unset: empty means nested discovery, which finds it.
+  "oxc.enable.oxlint": true,
+
+  // oxfmt stays off. There is no .oxfmtrc.json and no formatter in this repository on
+  // purpose - see the Prettier note in extensions.json.
+  "oxc.enable.oxfmt": false,
+
+  // `typescript.tsdk` is deliberately absent. web/node_modules/typescript is 7.0.2, the
+  // native compiler: platform binaries, no lib/tsserver.js, so "Use Workspace Version"
+  // cannot serve it. TypeScript 7 editor support comes from the TypeScript 7 extension, or
+  // from a recent VS Code that has it built in - not from this setting. If the editor
+  // disagrees with `npm run build`, that is the thing to check first.
+
+  // Looking up a glossary term should not wade through dependencies or build output.
+  "search.exclude": {
+    "**/node_modules": true,
+    "web/dist": true,
+    "**/bin": true,
+    "**/obj": true
+  },
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/bin/**": true,
+    "**/obj/**": true
+  },
+
+  // Prose, comments and commit messages here wrap at around 100 columns. A ruler, not a rule:
+  // nothing enforces it, and the markdown tables are wider.
+  "editor.rulers": [100]
+}

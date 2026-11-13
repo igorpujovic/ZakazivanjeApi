@@ -1,0 +1,35 @@
+{
+  // Workspace recommendations, offered on first open. None of this is required to build:
+  // `dotnet build` and `npm run build` need no editor. Each one earns its place against
+  // something specific in this repository.
+  "recommendations": [
+    // The API half. Solution view, EF Core-aware navigation, and a test explorer for
+    // ZakazivanjeApi.Tests. Pulls in the C# extension itself.
+    "ms-dotnettools.csdevkit",
+
+    // Tailwind v4 is CSS-first: the salon palette is declared with @theme in
+    // web/src/index.css, so without this, `bg-primary-soft` is an opaque string.
+    "bradlc.vscode-tailwindcss",
+
+    // oxlint, inline. It does not bundle the linter - it runs the one in web/node_modules,
+    // so the editor and `npm run lint` cannot disagree.
+    "oxc.oxc-vscode",
+
+    // The 22 tests, from the gutter. noConversions.test.ts scans the source tree, so running
+    // it while editing wallClock.ts is worth the click.
+    "vitest.explorer",
+
+    // Optional: for looking at what a Serializable race actually left in the table, and at
+    // the filtered unique index behind ADR-0005.
+    "ms-mssql.mssql"
+  ],
+
+  // Both of these would fight decisions already recorded. oxlint is the linter
+  // (src/lib/noConversions.test.ts explains why ESLint is not), and there is no Prettier
+  // config: prose, comments and tables are wrapped by hand, so format-on-save would reflow
+  // the entire repository on first touch.
+  "unwantedRecommendations": [
+    "dbaeumer.vscode-eslint",
+    "esbenp.prettier-vscode"
+  ]
+}

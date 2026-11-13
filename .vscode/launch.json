@@ -1,0 +1,53 @@
+{
+  "version": "0.2.0",
+
+  "configurations": [
+    {
+      // The API, with the debugger attached. Needs C# Dev Kit for the coreclr type.
+      //
+      // ASPNETCORE_URLS pins 5056 rather than leaving it to the profile, because launching
+      // the built dll directly does not read launchSettings.json - and 5056 is what the Vite
+      // proxy and every URL in the README assume.
+      "name": "API (http, Development)",
+      "type": "coreclr",
+      "request": "launch",
+      "preLaunchTask": "api: build",
+      "program": "${workspaceFolder}/ZakazivanjeApi/bin/Debug/net11.0/ZakazivanjeApi.dll",
+      "args": [],
+      "cwd": "${workspaceFolder}/ZakazivanjeApi",
+      "stopAtEntry": false,
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development",
+        "ASPNETCORE_URLS": "http://localhost:5056"
+      },
+      // Scalar and the OpenAPI document are mapped in Development only, so this is the one
+      // environment where opening /scalar makes sense.
+      "serverReadyAction": {
+        "action": "openExternally",
+        "pattern": "Now listening on: +(http[^ ]+)",
+        "uriFormat": "%s/scalar"
+      }
+    },
+    {
+      // The frontend, with breakpoints in .tsx. `web: dev` is a background task, so it keeps
+      // running after the debug session ends - stop it from the terminal panel when done.
+      "name": "Web (Chrome)",
+      "type": "chrome",
+      "request": "launch",
+      "preLaunchTask": "web: dev",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/web"
+    }
+  ],
+
+  "compounds": [
+    {
+      // The two-process dev loop, debuggable on both sides at once. The API first: the
+      // frontend's first request is a menu fetch through the proxy, and a proxy error page is
+      // a worse first impression than a half-second wait.
+      "name": "Full stack (API + Web)",
+      "configurations": ["API (http, Development)", "Web (Chrome)"],
+      "stopAll": true
+    }
+  ]
+}
