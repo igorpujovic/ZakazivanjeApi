@@ -37,6 +37,19 @@ Whether a service or a stylist may be chosen for a *new* booking. Making somethi
 inactive withdraws it from the menu; it stays on every booking already made against it.
 _Avoid_: Enabled, visible, deleted, archived
 
+### What the salon maintains
+
+**Catalogue**:
+Everything the salon keeps for bookings to be made against: its services and its stylists,
+active or not. It is what an admin curates, and it holds what has been withdrawn just as it
+holds what is on offer.
+_Avoid_: Inventory, listing, directory, master data
+
+**Menu**:
+The active services a client may choose from — the catalogue as a client sees it. A service
+withdrawn from the menu stays in the catalogue, and on every booking already made against it.
+_Avoid_: Price list, offerings, products, options
+
 ### Time
 
 **Working Hours**:
