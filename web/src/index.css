@@ -1,0 +1,66 @@
+@import 'tailwindcss';
+
+/*
+ * The salon palette. Warm neutrals with an aubergine primary and a muted brass accent —
+ * a hair salon, not a SaaS dashboard.
+ *
+ * No dark mode, deliberately: a salon's booking page has no business following the visitor's
+ * OS theme, and half-done dark mode looks worse than none (see spec, "Styling").
+ */
+@theme {
+  --color-ink: #1c1419;
+  --color-ink-soft: #5b4f57;
+  --color-ink-faint: #8d8189;
+
+  --color-canvas: #fdfbf9;
+  --color-surface: #ffffff;
+  --color-surface-sunken: #f6f1ee;
+
+  --color-line: #e7ddd8;
+  --color-line-strong: #d4c6bf;
+
+  --color-primary: #5c2a4d;
+  --color-primary-hover: #4a2240;
+  --color-primary-soft: #f3e7ef;
+
+  --color-accent: #a67c52;
+  --color-accent-soft: #f7efe6;
+
+  --color-danger: #9b2c2c;
+  --color-danger-soft: #fbeaea;
+  --color-success: #2f6b4f;
+  --color-success-soft: #e8f2ec;
+
+  --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+
+  --radius-panel: 0.75rem;
+}
+
+@layer base {
+  html {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    margin: 0;
+    font-family: var(--font-sans);
+    min-height: 100dvh;
+  }
+
+  /* Mobile-first on the client side: a 16px gutter and never a horizontal page scroll. */
+  :focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 2px;
+  }
+
+  button,
+  input,
+  select,
+  textarea {
+    font: inherit;
+    color: inherit;
+  }
+}
