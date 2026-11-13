@@ -5,9 +5,13 @@ namespace ZakazivanjeApi.Services;
 /// <summary>Reading and maintaining the menu of services the salon sells.</summary>
 public interface IServiceCatalogue
 {
-    /// <summary>The menu: active services only, ordered by name.</summary>
-    Task<IReadOnlyList<ServiceResponse>> ListActiveAsync(
-        CancellationToken cancellationToken = default);
+    /// <summary>
+    /// The menu, ordered by name — or the whole catalogue, withdrawn services included, when
+    /// <paramref name="includeInactive"/> says so. Who is allowed to ask for the wider list is
+    /// settled before this is called: the catalogue answers the question it is given.
+    /// </summary>
+    Task<IReadOnlyList<ServiceResponse>> ListAsync(
+        bool includeInactive, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// One service, active or not, so a booking made against a withdrawn service still renders.

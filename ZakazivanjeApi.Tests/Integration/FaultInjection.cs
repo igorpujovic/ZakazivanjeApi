@@ -23,8 +23,9 @@ public sealed class FailingStylistCatalogue : IStylistCatalogue
     public const string SecretInTheMessage =
         @"Server=(localdb)\mssqllocaldb;Password=hunter2;Table=Stylists";
 
-    public Task<IReadOnlyList<StylistResponse>> ListActiveAsync(
-        CancellationToken cancellationToken = default) => Fall<IReadOnlyList<StylistResponse>>();
+    public Task<IReadOnlyList<StylistResponse>> ListAsync(
+        bool includeInactive, CancellationToken cancellationToken = default) =>
+        Fall<IReadOnlyList<StylistResponse>>();
 
     public Task<StylistResponse> CreateAsync(
         CreateStylistRequest request, CancellationToken cancellationToken = default) =>

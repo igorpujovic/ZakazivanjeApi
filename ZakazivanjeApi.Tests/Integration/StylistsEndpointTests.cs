@@ -27,10 +27,12 @@ public class StylistsEndpointTests(SalonApiFactory factory)
     private static object ValidStylistBody => new { name = "Nina", isActive = true };
 
     /// <summary>The ids the public list is offering, read without a token.</summary>
-    private async Task<IReadOnlyList<int>> ActiveStylistIdsAsync()
-    {
-        var response = await _client.GetWithTokenAsync("/api/stylists", null);
+    private async Task<IReadOnlyList<int>> ActiveStylistIdsAsync() =>
+        await IdsIn(await _client.GetWithTokenAsync("/api/stylists", null));
 
+    /// <summary>The ids in a list response, which is all any of these tests asks of one.</summary>
+    private static async Task<IReadOnlyList<int>> IdsIn(HttpResponseMessage response)
+    {
         response.EnsureSuccessStatusCode();
 
         return [.. (await response.BodyAsync())
@@ -78,6 +80,47 @@ public class StylistsEndpointTests(SalonApiFactory factory)
         Assert.Equal(
             "Jelena Pavlovic", (await returned.BodyAsync()).GetProperty("name").GetString());
         Assert.Contains(id, await ActiveStylistIdsAsync());
+    }
+
+    [Fact]
+    public async Task Shows_an_admin_the_retired_stylists_only_when_asked_for_them()
+    {
+        var admin = await _client.AdminTokenAsync();
+        var id = await _client.NewStylistAsync("Tamara", admin);
+
+        (await _client.PutWithTokenAsync(
+            $"/api/stylists/{id}", admin, new { name = "Tamara", isActive = false }))
+            .EnsureSuccessStatusCode();
+
+        var everyone = await _client.GetWithTokenAsync(
+            "/api/stylists?includeInactive=true", admin);
+        var bookable = await _client.GetWithTokenAsync("/api/stylists", admin);
+
+        // Retiring a stylist was already possible; finding them afterwards was not. Without
+        // the flag an admin sees the bookable list, exactly as a client does.
+        Assert.Contains(id, await IdsIn(everyone));
+        Assert.DoesNotContain(id, await IdsIn(bookable));
+    }
+
+    [Fact]
+    public async Task Refuses_to_widen_the_list_for_a_caller_it_cannot_identify()
+    {
+        var response = await _client.GetWithTokenAsync("/api/stylists?includeInactive=true", null);
+
+        // The services list refuses on exactly these terms. Two routes answering the same
+        // question differently would be worse than either answer.
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("unauthorized", await response.CodeAsync());
+    }
+
+    [Fact]
+    public async Task Refuses_to_widen_the_list_for_a_client()
+    {
+        var response = await _client.GetWithTokenAsync(
+            "/api/stylists?includeInactive=true", await _client.NewClientTokenAsync());
+
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal("forbidden", await response.CodeAsync());
     }
 
     [Theory]

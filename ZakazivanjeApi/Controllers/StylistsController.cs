@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZakazivanjeApi.Dtos;
@@ -22,12 +23,37 @@ public class StylistsController(IStylistCatalogue catalogue, ISlotFinder slotFin
     : ControllerBase
 {
     /// <summary>Lists the stylists who can currently be booked.</summary>
+    /// <remarks>
+    /// An admin passing <c>includeInactive=true</c> gets the retired stylists as well, which is
+    /// what the admin catalogue screen is for and the only way to find one in order to bring
+    /// them back (ADR-0012). Anybody else passing it is refused rather than quietly served the
+    /// bookable list.
+    /// </remarks>
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType<IReadOnlyList<StylistResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<StylistResponse>>> List(
-        CancellationToken cancellationToken) =>
-        Ok(await catalogue.ListActiveAsync(cancellationToken));
+        CancellationToken cancellationToken,
+
+        // Attributed for the same reason as on the services list: the XML comment above reaches
+        // a reader of this file and nobody else.
+        [FromQuery]
+        [Description(
+            "Admin only. True widens the list from the stylists who can be booked to everyone "
+            + "on the books, the retired included. Any other caller passing true is refused — "
+            + "401 without a token, 403 with a client's — rather than quietly served the "
+            + "bookable list.")]
+        bool includeInactive = false)
+    {
+        if (this.RefusalToWiden(includeInactive) is { } refusal)
+        {
+            return refusal;
+        }
+
+        return Ok(await catalogue.ListAsync(includeInactive, cancellationToken));
+    }
 
     /// <summary>When this stylist could perform this service on this day.</summary>
     /// <remarks>

@@ -111,18 +111,18 @@ Then open <http://localhost:5056/scalar> — see [API docs](#api-docs) below.
 
 ## Endpoints
 
-Sixteen. `Client + Admin` means both, on different terms.
+Sixteen. `Client + Admin` and `Public + Admin` mean both, on different terms.
 
 | Method | Route                                                 | Access         | Purpose                        |
 | ------ | ----------------------------------------------------- | -------------- | ------------------------------ |
 | POST   | `/api/auth/register`                                  | Public         | Create a client account        |
 | POST   | `/api/auth/login`                                     | Public         | Return a JWT                   |
-| GET    | `/api/services`                                       | Public         | List active services           |
+| GET    | `/api/services?includeInactive=`                      | Public + Admin | List the menu or the catalogue |
 | GET    | `/api/services/{id}`                                  | Public         | Get one service, active or not |
 | POST   | `/api/services`                                       | Admin          | Create a service               |
-| PUT    | `/api/services/{id}`                                  | Admin          | Update a service               |
+| PUT    | `/api/services/{id}`                                  | Admin          | Update or restore a service    |
 | DELETE | `/api/services/{id}`                                  | Admin          | Deactivate a service           |
-| GET    | `/api/stylists`                                       | Public         | List active stylists           |
+| GET    | `/api/stylists?includeInactive=`                      | Public + Admin | List the bookable or everyone  |
 | POST   | `/api/stylists`                                       | Admin          | Create a stylist               |
 | PUT    | `/api/stylists/{id}`                                  | Admin          | Update or deactivate           |
 | GET    | `/api/stylists/{id}/available-slots?date=&serviceId=` | Public         | Free starts for a day          |
@@ -131,6 +131,15 @@ Sixteen. `Client + Admin` means both, on different terms.
 | PUT    | `/api/bookings/{id}/cancel`                           | Client + Admin | Cancel a booking               |
 | GET    | `/api/bookings?date=&stylistId=&page=&pageSize=`      | Admin          | List all bookings              |
 | PUT    | `/api/bookings/{id}/complete`                         | Admin          | Mark completed                 |
+
+The two list routes answer with the **menu** — active rows only — to everybody, and with the
+whole **catalogue** to an admin who passes `includeInactive=true` (see `GLOSSARY.md` for the
+difference). Admin only, because the catalogue is what an admin curates and a client has no use
+for a service they cannot book. Anyone else passing the flag is refused — `401` without a token,
+`403` with a client's — rather than quietly served the menu: the API would otherwise answer a
+narrower question than the one it was asked, which is the same position it takes on `page=0`.
+This is a deviation from the source specification, and the only way to find something that has
+been withdrawn in order to put it back with `PUT /api/services/{id}` (ADR-0012).
 
 Pagination returns `{ items, page, pageSize, totalCount, totalPages }`, defaulting to
 `page=1, pageSize=20`, with `pageSize` capped at 100 rather than refused — the response says

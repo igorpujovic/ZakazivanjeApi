@@ -9,14 +9,25 @@ namespace ZakazivanjeApi.Services;
 /// <summary>The menu of services, over the specification's <c>Service</c> table.</summary>
 public class ServiceCatalogue(SalonDbContext db) : IServiceCatalogue
 {
-    public async Task<IReadOnlyList<ServiceResponse>> ListActiveAsync(
-        CancellationToken cancellationToken = default) =>
-        await db.Services
-            .AsNoTracking()
-            .Where(service => service.IsActive)
+    public async Task<IReadOnlyList<ServiceResponse>> ListAsync(
+        bool includeInactive, CancellationToken cancellationToken = default)
+    {
+        var services = db.Services.AsNoTracking();
+
+        // Composed rather than a `includeInactive || service.IsActive` predicate, which would
+        // reach SQL as a parameter OR-ed against the column and ask the server to scan for the
+        // menu — the one of the two lists that every client reads.
+        if (!includeInactive)
+        {
+            services = services.Where(service => service.IsActive);
+        }
+
+        return await services
 
             // By name, because this is a menu someone reads. Id breaks the tie, so two services
-            // sharing a name keep a stable order between requests rather than swapping.
+            // sharing a name keep a stable order between requests rather than swapping. The
+            // withdrawn ones sort in among the rest: an admin reading the catalogue is looking
+            // up a name, and the response says of each whether it is active.
             .OrderBy(service => service.Name)
             .ThenBy(service => service.Id)
             .Select(service => new ServiceResponse(
@@ -26,6 +37,7 @@ public class ServiceCatalogue(SalonDbContext db) : IServiceCatalogue
                 service.Price,
                 service.IsActive))
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<ServiceResponse> GetAsync(
         int id, CancellationToken cancellationToken = default)

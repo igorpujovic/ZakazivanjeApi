@@ -41,3 +41,32 @@ cannot be *listed* once inactive.
 - Integration tests cover the role gate on both routes and the service round-trip
   active → inactive → active.
 - ADR-0012 is written in issue 09 covering why one route answers differently by role.
+
+## Comments
+
+**Implemented.** Two notes on what the scope turned out to be.
+
+*The role gate, decided.* A caller without the `Admin` role passing `includeInactive=true` is
+**refused**, not quietly served the active-only list: `401` with no token, `403` with a
+client's, which is the division every admin route already makes and the one asserted across the
+existing endpoint tests. A `401` for an anonymous caller is the honest answer — retrying with an
+admin's token works. The reasoning is the API's own position on `BookingsQuery.Page`: answering
+a narrower question than the one asked hides both an admin screen holding a stale session and a
+client that misread the contract. Enforced in one place, `Services/CatalogueVisibility.cs`, so
+the two routes cannot drift; it has to be the action's decision rather than an `[Authorize]`
+attribute's, because authorization is settled before the action runs and both routes must stay
+open to everyone for the list they answer with by default. Documented in `README.md` and in
+`../salon-booking/spec.md`.
+
+*`IsActive` on `UpdateServiceRequest` was already there*, from `6874964 Catalogue: services and
+stylists, with soft delete` — the scope above reads as though it were missing. So `PUT
+/api/services/{id}` already restored a withdrawn service, and
+`Updates_a_service_and_can_put_a_withdrawn_one_back_on_the_menu` already covered it. The round
+trip asked for under "Done when" went in as
+`Puts_a_restored_service_back_on_offer_without_touching_its_bookings`, which was green on
+arrival: it adds that a restored service is bookable again and that both halves of the trip
+leave an existing booking alone. Real work left in this ticket: the `includeInactive` flag, its
+role gate, and the documentation.
+
+ADR-0012 is still outstanding, as planned, and belongs to issue 09. Everything here references
+it already.

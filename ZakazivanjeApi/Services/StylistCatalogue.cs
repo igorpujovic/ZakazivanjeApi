@@ -9,18 +9,29 @@ namespace ZakazivanjeApi.Services;
 /// <summary>The salon's stylists, over the specification's <c>Stylist</c> table.</summary>
 public class StylistCatalogue(SalonDbContext db) : IStylistCatalogue
 {
-    public async Task<IReadOnlyList<StylistResponse>> ListActiveAsync(
-        CancellationToken cancellationToken = default) =>
-        await db.Stylists
-            .AsNoTracking()
-            .Where(stylist => stylist.IsActive)
+    public async Task<IReadOnlyList<StylistResponse>> ListAsync(
+        bool includeInactive, CancellationToken cancellationToken = default)
+    {
+        var stylists = db.Stylists.AsNoTracking();
+
+        // Composed rather than a `includeInactive || stylist.IsActive` predicate, which would
+        // reach SQL as a parameter OR-ed against the column and ask the server to scan for the
+        // bookable list — the one of the two that every client reads.
+        if (!includeInactive)
+        {
+            stylists = stylists.Where(stylist => stylist.IsActive);
+        }
+
+        return await stylists
 
             // Id breaks the tie, so two stylists sharing a name keep a stable order between
-            // requests rather than swapping.
+            // requests rather than swapping. The retired ones sort in among the rest; the
+            // response says of each whether they are still on the list.
             .OrderBy(stylist => stylist.Name)
             .ThenBy(stylist => stylist.Id)
             .Select(stylist => new StylistResponse(stylist.Id, stylist.Name, stylist.IsActive))
             .ToListAsync(cancellationToken);
+    }
 
     public async Task<StylistResponse> CreateAsync(
         CreateStylistRequest request, CancellationToken cancellationToken = default)

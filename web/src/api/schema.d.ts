@@ -524,7 +524,10 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Admin only. True widens the list from the menu to the whole catalogue, withdrawn services included. Any other caller passing true is refused — 401 without a token, 403 with a client's — rather than quietly served the menu. */
+                    includeInactive?: boolean;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -538,6 +541,24 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["ServiceResponse"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Something unforeseen. Logged server-side; the body says nothing more than code: internal_error. */
@@ -813,7 +834,10 @@ export interface paths {
         };
         get: {
             parameters: {
-                query?: never;
+                query?: {
+                    /** @description Admin only. True widens the list from the stylists who can be booked to everyone on the books, the retired included. Any other caller passing true is refused — 401 without a token, 403 with a client's — rather than quietly served the bookable list. */
+                    includeInactive?: boolean;
+                };
                 header?: never;
                 path?: never;
                 cookie?: never;
@@ -827,6 +851,24 @@ export interface paths {
                     };
                     content: {
                         "application/json": components["schemas"]["StylistResponse"][];
+                    };
+                };
+                /** @description Unauthorized */
+                401: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
+                    };
+                };
+                /** @description Forbidden */
+                403: {
+                    headers: {
+                        [name: string]: unknown;
+                    };
+                    content: {
+                        "application/json": components["schemas"]["ProblemDetails"];
                     };
                 };
                 /** @description Something unforeseen. Logged server-side; the body says nothing more than code: internal_error. */

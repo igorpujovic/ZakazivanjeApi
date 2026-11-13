@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using ZakazivanjeApi.Dtos;
@@ -19,13 +20,37 @@ namespace ZakazivanjeApi.Controllers;
 public class ServicesController(IServiceCatalogue catalogue) : ControllerBase
 {
     /// <summary>Lists the services currently on offer.</summary>
-    /// <remarks>Active services only. A withdrawn one is still readable by its id.</remarks>
+    /// <remarks>
+    /// The menu: active services only, and a withdrawn one is still readable by its id. An
+    /// admin passing <c>includeInactive=true</c> gets the whole catalogue instead, which is the
+    /// only way to find something that has been withdrawn in order to put it back (ADR-0012).
+    /// Anybody else passing it is refused rather than quietly served the menu.
+    /// </remarks>
     [HttpGet]
     [AllowAnonymous]
     [ProducesResponseType<IReadOnlyList<ServiceResponse>>(StatusCodes.Status200OK)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType<ProblemDetails>(StatusCodes.Status403Forbidden)]
     public async Task<ActionResult<IReadOnlyList<ServiceResponse>>> List(
-        CancellationToken cancellationToken) =>
-        Ok(await catalogue.ListActiveAsync(cancellationToken));
+        CancellationToken cancellationToken,
+
+        // Attributed rather than left to the XML comment above, which this project does not
+        // generate a documentation file for and which therefore reaches no reader of the
+        // OpenAPI document or of the types generated from it.
+        [FromQuery]
+        [Description(
+            "Admin only. True widens the list from the menu to the whole catalogue, "
+            + "withdrawn services included. Any other caller passing true is refused — 401 "
+            + "without a token, 403 with a client's — rather than quietly served the menu.")]
+        bool includeInactive = false)
+    {
+        if (this.RefusalToWiden(includeInactive) is { } refusal)
+        {
+            return refusal;
+        }
+
+        return Ok(await catalogue.ListAsync(includeInactive, cancellationToken));
+    }
 
     /// <summary>Reads one service, whether or not it is still on the menu.</summary>
     /// <remarks>

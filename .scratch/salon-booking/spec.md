@@ -148,18 +148,18 @@ Returns an empty list for a closed weekday or an inactive stylist, not an error.
 
 ## Endpoints
 
-Sixteen, unchanged from the source specification.
+Sixteen. `Client + Admin` and `Public + Admin` mean both, on different terms.
 
 | Method | Route                                                 | Access         | Purpose                        |
 | ------ | ----------------------------------------------------- | -------------- | ------------------------------ |
 | POST   | `/api/auth/register`                                  | Public         | Create a client account        |
 | POST   | `/api/auth/login`                                     | Public         | Return a JWT                   |
-| GET    | `/api/services`                                       | Public         | List active services           |
+| GET    | `/api/services?includeInactive=`                      | Public + Admin | List the menu or the catalogue |
 | GET    | `/api/services/{id}`                                  | Public         | Get one service, active or not |
 | POST   | `/api/services`                                       | Admin          | Create a service               |
-| PUT    | `/api/services/{id}`                                  | Admin          | Update a service               |
+| PUT    | `/api/services/{id}`                                  | Admin          | Update or restore a service    |
 | DELETE | `/api/services/{id}`                                  | Admin          | Deactivate a service           |
-| GET    | `/api/stylists`                                       | Public         | List active stylists           |
+| GET    | `/api/stylists?includeInactive=`                      | Public + Admin | List the bookable or everyone  |
 | POST   | `/api/stylists`                                       | Admin          | Create a stylist               |
 | PUT    | `/api/stylists/{id}`                                  | Admin          | Update or deactivate           |
 | GET    | `/api/stylists/{id}/available-slots?date=&serviceId=` | Public         | Free starts for a day          |
@@ -172,6 +172,13 @@ Sixteen, unchanged from the source specification.
 Pagination returns `{ items, page, pageSize, totalCount, totalPages }`, defaulting to
 `page=1, pageSize=20`, `pageSize` capped at 100. Ordering is `Start` then `Id` — without
 the tiebreak, equal-start bookings can swap pages and a row gets duplicated or skipped.
+
+Deviation from the source specification: `includeInactive` on the two list routes, admin only,
+which widens them from the menu to the catalogue (ADR-0012). Without it an admin can withdraw a
+service and never see or recover it again. Any other caller passing the flag is refused — `401`
+without a token, `403` with a client's — rather than served the narrower list they did not ask
+for. The default for both routes is unchanged, so the public contract does not move. Added for
+the frontend's admin catalogue screens; `.scratch/salon-frontend/issues/02-*.md` is the ticket.
 
 ## Technical decisions
 

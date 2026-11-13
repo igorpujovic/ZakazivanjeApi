@@ -31,10 +31,12 @@ public class ServicesEndpointTests(SalonApiFactory factory)
         new { name = "Haircut", durationMinutes = 45, price = 2500m, isActive = true };
 
     /// <summary>The ids the public menu is offering, read without a token.</summary>
-    private async Task<IReadOnlyList<int>> MenuIdsAsync()
-    {
-        var response = await _client.GetWithTokenAsync("/api/services", null);
+    private async Task<IReadOnlyList<int>> MenuIdsAsync() =>
+        await IdsIn(await _client.GetWithTokenAsync("/api/services", null));
 
+    /// <summary>The ids in a list response, which is all any of these tests asks of one.</summary>
+    private static async Task<IReadOnlyList<int>> IdsIn(HttpResponseMessage response)
+    {
         response.EnsureSuccessStatusCode();
 
         return [.. (await response.BodyAsync())
@@ -126,6 +128,63 @@ public class ServicesEndpointTests(SalonApiFactory factory)
 
         Assert.Equal(HttpStatusCode.OK, byId.StatusCode);
         Assert.False((await byId.BodyAsync()).GetProperty("isActive").GetBoolean());
+    }
+
+    [Fact]
+    public async Task Shows_an_admin_the_whole_catalogue_only_when_asked_for_it()
+    {
+        var admin = await _client.AdminTokenAsync();
+        var id = await _client.NewServiceAsync("Updo", admin: admin);
+
+        (await _client.DeleteWithTokenAsync($"/api/services/{id}", admin))
+            .EnsureSuccessStatusCode();
+
+        var catalogue = await _client.GetWithTokenAsync(
+            "/api/services?includeInactive=true", admin);
+        var menu = await _client.GetWithTokenAsync("/api/services", admin);
+
+        // The catalogue holds what has been withdrawn; the menu does not. Without the flag an
+        // admin sees exactly what a client sees, so the default contract has not moved.
+        Assert.Contains(id, await IdsIn(catalogue));
+        Assert.DoesNotContain(id, await IdsIn(menu));
+    }
+
+    [Fact]
+    public async Task Refuses_to_widen_the_list_for_a_caller_it_cannot_identify()
+    {
+        var response = await _client.GetWithTokenAsync("/api/services?includeInactive=true", null);
+
+        // Unauthorized rather than forbidden, and the same division the admin routes make: the
+        // API does not know who this is, and retrying with an admin's token would work.
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
+        Assert.Equal("unauthorized", await response.CodeAsync());
+    }
+
+    [Fact]
+    public async Task Refuses_to_widen_the_list_for_a_client()
+    {
+        var response = await _client.GetWithTokenAsync(
+            "/api/services?includeInactive=true", await _client.NewClientTokenAsync());
+
+        // Refused, not quietly narrowed to the menu. Answering a different question than the
+        // one asked would hide a client session that had wandered onto an admin screen.
+        Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
+        Assert.Equal("forbidden", await response.CodeAsync());
+    }
+
+    [Theory]
+    [InlineData(null)]
+    [InlineData("client")]
+    public async Task Serves_the_menu_to_anyone_who_asks_for_no_more_than_the_menu(string? role)
+    {
+        var token = role is null ? null : await _client.NewClientTokenAsync();
+
+        var response = await _client.GetWithTokenAsync(
+            "/api/services?includeInactive=false", token);
+
+        // The gate is on widening the list, not on the parameter's presence: false is what
+        // every caller already gets, so refusing it would be refusing the default.
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Fact]
@@ -283,6 +342,55 @@ public class ServicesEndpointTests(SalonApiFactory factory)
         Assert.Contains(
             "isActive", await response.RefusedFieldsAsync(), StringComparer.OrdinalIgnoreCase);
         Assert.DoesNotContain(id, await MenuIdsAsync());
+    }
+
+    [Fact]
+    public async Task Puts_a_restored_service_back_on_offer_without_touching_its_bookings()
+    {
+        var admin = await _client.AdminTokenAsync();
+        var serviceId = await _client.NewServiceAsync("Olaplex", 45, 4000m, admin);
+        var bookingId = await BookingAgainstAsync(serviceId);
+
+        (await _client.DeleteWithTokenAsync($"/api/services/{serviceId}", admin))
+            .EnsureSuccessStatusCode();
+
+        // Still in the catalogue, which is how an admin finds it in order to do this at all.
+        Assert.Contains(
+            serviceId,
+            await IdsIn(await _client.GetWithTokenAsync(
+                "/api/services?includeInactive=true", admin)));
+
+        (await _client.PutWithTokenAsync(
+            $"/api/services/{serviceId}",
+            admin,
+            new { name = "Olaplex", durationMinutes = 45, price = 4000m, isActive = true }))
+            .EnsureSuccessStatusCode();
+
+        Assert.Contains(serviceId, await MenuIdsAsync());
+
+        // On offer again means bookable again: the rule that refuses an inactive service no
+        // longer fires, so the withdrawal really was undone rather than merely hidden.
+        var booked = await _client.PostWithTokenAsync(
+            "/api/bookings",
+            await _client.NewClientTokenAsync(),
+            new
+            {
+                stylistId = await _client.NewStylistAsync("Ana", admin),
+                serviceId,
+                start = NextWeekday(DayOfWeek.Monday).ToDateTime(new TimeOnly(10, 0)),
+            });
+
+        Assert.Equal(HttpStatusCode.Created, booked.StatusCode);
+
+        var existing = await factory.WithDbAsync(db =>
+            db.Bookings.AsNoTracking().SingleAsync(b => b.Id == bookingId));
+
+        // The booking taken before the withdrawal went through both halves of the round trip
+        // untouched. It keeps its own snapshot either way (ADR-0003), and nothing in this flow
+        // has any business rewriting a booking.
+        Assert.Equal(BookingStatus.Scheduled, existing.Status);
+        Assert.Equal(9000m, existing.PriceAtBooking);
+        Assert.Equal("Balayage", existing.ServiceNameAtBooking);
     }
 
     [Fact]
