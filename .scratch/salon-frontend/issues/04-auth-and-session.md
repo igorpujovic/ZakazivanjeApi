@@ -67,8 +67,17 @@ Two other decisions worth knowing, neither a change of scope:
 - Expiry **clears the session and stops**; the route guard then performs the redirect with the
   right `returnTo` for wherever the visitor is. One redirect path rather than two.
 
-Still unverified by any test: the four form-level "Done when" items (the register-into-login
+All seven "Done when" items now have a test. The four form-level ones — the register-into-login
 chain, `email_taken` on the email field, the identical wrong-password copy, and the
-register-succeeded-login-failed fallback). The tests cover the guards and the pure modules. All
-four were exercised by hand against a running API; none has an automated test, because
-`../spec.md` scopes MSW to the booking page and the admin bookings table in issue 09.
+register-succeeded-login-failed fallback — are covered by MSW in
+`web/src/pages/authForms.test.tsx`, with the handlers typed from the generated schema so a mock
+cannot drift from the contract, and the bodies copied from a running instance.
+
+`../spec.md` scopes MSW to the booking page and the admin bookings table in issue 09; this is
+MSW on a third screen, which is *more* than it asked for. The spec also says four of this
+ticket's acceptance criteria are about those two forms, and nothing else in the plan would ever
+have exercised them, so they are tested here rather than left to no one. The shared setup in
+`web/src/test/apiMocks.ts` is issue 09's to reuse.
+
+Each of the four was checked by breaking the behaviour it covers and confirming that exactly
+the matching test failed — a test that cannot fail would be worse than none.
