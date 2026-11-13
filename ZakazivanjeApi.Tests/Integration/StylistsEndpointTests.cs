@@ -28,17 +28,7 @@ public class StylistsEndpointTests(SalonApiFactory factory)
 
     /// <summary>The ids the public list is offering, read without a token.</summary>
     private async Task<IReadOnlyList<int>> ActiveStylistIdsAsync() =>
-        await IdsIn(await _client.GetWithTokenAsync("/api/stylists", null));
-
-    /// <summary>The ids in a list response, which is all any of these tests asks of one.</summary>
-    private static async Task<IReadOnlyList<int>> IdsIn(HttpResponseMessage response)
-    {
-        response.EnsureSuccessStatusCode();
-
-        return [.. (await response.BodyAsync())
-            .EnumerateArray()
-            .Select(stylist => stylist.GetProperty("id").GetInt32())];
-    }
+        await (await _client.GetWithTokenAsync("/api/stylists", null)).IdsAsync();
 
     [Fact]
     public async Task Creates_a_stylist_and_puts_them_on_the_public_list()
@@ -98,8 +88,8 @@ public class StylistsEndpointTests(SalonApiFactory factory)
 
         // Retiring a stylist was already possible; finding them afterwards was not. Without
         // the flag an admin sees the bookable list, exactly as a client does.
-        Assert.Contains(id, await IdsIn(everyone));
-        Assert.DoesNotContain(id, await IdsIn(bookable));
+        Assert.Contains(id, await everyone.IdsAsync());
+        Assert.DoesNotContain(id, await bookable.IdsAsync());
     }
 
     [Fact]
@@ -121,6 +111,22 @@ public class StylistsEndpointTests(SalonApiFactory factory)
 
         Assert.Equal(HttpStatusCode.Forbidden, response.StatusCode);
         Assert.Equal("forbidden", await response.CodeAsync());
+    }
+
+    [Theory]
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Serves_the_bookable_list_to_anyone_who_asks_for_no_more_than_it(bool asClient)
+    {
+        var token = asClient ? await _client.NewClientTokenAsync() : null;
+
+        var response = await _client.GetWithTokenAsync(
+            "/api/stylists?includeInactive=false", token);
+
+        // The gate is on widening the list, not on the parameter's presence: false is what
+        // every caller already gets, so refusing it would be refusing the default. Asserted on
+        // both routes, because "consistently across both" is the claim being made.
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
     }
 
     [Theory]

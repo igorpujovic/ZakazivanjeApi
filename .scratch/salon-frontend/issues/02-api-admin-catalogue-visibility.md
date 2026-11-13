@@ -1,6 +1,6 @@
 # 02 - API: let an admin see and restore inactive catalogue rows
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Spec: `../spec.md`
@@ -52,7 +52,7 @@ client's, which is the division every admin route already makes and the one asse
 existing endpoint tests. A `401` for an anonymous caller is the honest answer — retrying with an
 admin's token works. The reasoning is the API's own position on `BookingsQuery.Page`: answering
 a narrower question than the one asked hides both an admin screen holding a stale session and a
-client that misread the contract. Enforced in one place, `Services/CatalogueVisibility.cs`, so
+client that misread the contract. Enforced in one place, `Services/CatalogueScope.cs`, so
 the two routes cannot drift; it has to be the action's decision rather than an `[Authorize]`
 attribute's, because authorization is settled before the action runs and both routes must stay
 open to everyone for the list they answer with by default. Documented in `README.md` and in

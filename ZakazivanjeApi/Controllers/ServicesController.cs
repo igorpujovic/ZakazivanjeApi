@@ -34,9 +34,17 @@ public class ServicesController(IServiceCatalogue catalogue) : ControllerBase
     public async Task<ActionResult<IReadOnlyList<ServiceResponse>>> List(
         CancellationToken cancellationToken,
 
-        // Attributed rather than left to the XML comment above, which this project does not
-        // generate a documentation file for and which therefore reaches no reader of the
-        // OpenAPI document or of the types generated from it.
+        // A bare parameter rather than a [FromQuery] record in Dtos/, as the booking list and
+        // the slot query use. Those shape several fields and validate them; this is one flag
+        // with nothing to validate, and a class would document it worse rather than better: a
+        // complex query type reaches the OpenAPI document under its PascalCase property name —
+        // the slot query really is documented as Date and ServiceId — and the wire name here is
+        // includeInactive, as the frontend's generated types need it.
+        //
+        // Attributed rather than left to the XML comment above, because this project generates
+        // no documentation file and XML comments therefore reach a reader of this file and
+        // nobody else — not the document, and not the types generated from it. Verified against
+        // the running application both ways.
         [FromQuery]
         [Description(
             "Admin only. True widens the list from the menu to the whole catalogue, "

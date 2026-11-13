@@ -2,7 +2,10 @@ using ZakazivanjeApi.Dtos;
 
 namespace ZakazivanjeApi.Services;
 
-/// <summary>Reading and maintaining the menu of services the salon sells.</summary>
+/// <summary>
+/// Reading and maintaining the services the salon sells: the <b>menu</b> a client chooses from
+/// and the services half of the <b>catalogue</b> an admin curates (GLOSSARY.md).
+/// </summary>
 public interface IServiceCatalogue
 {
     /// <summary>

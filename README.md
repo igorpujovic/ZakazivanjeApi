@@ -132,14 +132,16 @@ Sixteen. `Client + Admin` and `Public + Admin` mean both, on different terms.
 | GET    | `/api/bookings?date=&stylistId=&page=&pageSize=`      | Admin          | List all bookings              |
 | PUT    | `/api/bookings/{id}/complete`                         | Admin          | Mark completed                 |
 
-The two list routes answer with the **menu** — active rows only — to everybody, and with the
-whole **catalogue** to an admin who passes `includeInactive=true` (see `GLOSSARY.md` for the
-difference). Admin only, because the catalogue is what an admin curates and a client has no use
-for a service they cannot book. Anyone else passing the flag is refused — `401` without a token,
-`403` with a client's — rather than quietly served the menu: the API would otherwise answer a
-narrower question than the one it was asked, which is the same position it takes on `page=0`.
-This is a deviation from the source specification, and the only way to find something that has
-been withdrawn in order to put it back with `PUT /api/services/{id}` (ADR-0012).
+The two list routes answer with the active rows only — the **menu** of services, the stylists
+who can be booked — to everybody, and with the whole **catalogue**, what has been withdrawn
+included, to an admin who passes `includeInactive=true` (`GLOSSARY.md` has the difference
+between the menu and the catalogue). Admin only, because the catalogue is what an admin curates
+and a client has no use for a service they cannot book. Anyone else passing it as `true` is
+refused — `401` without a token, `403` with a client's — rather than quietly served the narrower
+list: the API would otherwise answer a narrower question than the one it was asked, which is the
+same position it takes on `page=0`. Passing `false` asks for what every caller already gets and
+is refused to nobody. This is a deviation from the source specification, and the only way to
+find a withdrawn service in order to put it back with `PUT /api/services/{id}` (ADR-0012).
 
 Pagination returns `{ items, page, pageSize, totalCount, totalPages }`, defaulting to
 `page=1, pageSize=20`, with `pageSize` capped at 100 rather than refused — the response says

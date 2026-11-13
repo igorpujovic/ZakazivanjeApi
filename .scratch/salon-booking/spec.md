@@ -174,11 +174,12 @@ Pagination returns `{ items, page, pageSize, totalCount, totalPages }`, defaulti
 the tiebreak, equal-start bookings can swap pages and a row gets duplicated or skipped.
 
 Deviation from the source specification: `includeInactive` on the two list routes, admin only,
-which widens them from the menu to the catalogue (ADR-0012). Without it an admin can withdraw a
-service and never see or recover it again. Any other caller passing the flag is refused — `401`
-without a token, `403` with a client's — rather than served the narrower list they did not ask
-for. The default for both routes is unchanged, so the public contract does not move. Added for
-the frontend's admin catalogue screens; `.scratch/salon-frontend/issues/02-*.md` is the ticket.
+which widens them from the active rows to the whole catalogue (ADR-0012). Without it an admin
+can withdraw a service and never see or recover it again. Any other caller passing it as `true`
+is refused — `401` without a token, `403` with a client's — rather than served the narrower list
+they did not ask for; `false` asks for the default and is refused to nobody. The default for
+both routes is unchanged, so the public contract does not move. Added for the frontend's admin
+catalogue screens; `.scratch/salon-frontend/issues/02-*.md` is the ticket.
 
 ## Technical decisions
 

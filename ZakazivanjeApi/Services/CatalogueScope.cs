@@ -4,11 +4,17 @@ using ZakazivanjeApi.Entities;
 namespace ZakazivanjeApi.Services;
 
 /// <summary>
-/// Who may see the withdrawn half of the <b>catalogue</b>, as opposed to the <b>menu</b> that
-/// the two list routes answer with by default (GLOSSARY.md). One place, so those two routes
-/// cannot drift into refusing the same caller on different terms (ADR-0012).
+/// Which half of the <b>catalogue</b> a caller may ask for: all of it, or only what is
+/// <b>active</b> — the <b>menu</b>, for services — which is what the two list routes answer
+/// with by default (GLOSSARY.md). One place, so those two routes cannot drift into refusing
+/// the same caller on different terms (ADR-0012).
 /// </summary>
-public static class CatalogueVisibility
+/// <remarks>
+/// Named for scope, as <see cref="Caller.ClientScope"/> is, rather than for visibility: the
+/// glossary rules that word out around <c>Active</c>, and what is withdrawn is not hidden — it
+/// is still in the catalogue and still on every booking taken against it.
+/// </remarks>
+public static class CatalogueScope
 {
     /// <summary>
     /// The refusal a caller has earned by asking for inactive rows without the role that comes
@@ -36,6 +42,9 @@ public static class CatalogueVisibility
     public static ActionResult? RefusalToWiden(
         this ControllerBase controller, bool includeInactive)
     {
+        // Read off the principal rather than through Caller, which is the one place the
+        // client-or-salon difference is decided everywhere else: Caller.From refuses a request
+        // it cannot identify, and these two routes have to answer an anonymous one.
         if (!includeInactive || controller.User.IsInRole(nameof(UserRole.Admin)))
         {
             return null;

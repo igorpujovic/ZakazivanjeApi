@@ -156,6 +156,20 @@ public static class SalonApiClient
         await response.Content.ReadFromJsonAsync<JsonElement>();
 
     /// <summary>
+    /// The ids in a list response, which is all a test asking what a list holds needs of one.
+    /// Shared, because both halves of the catalogue are read this way and a copy per test class
+    /// is a copy that can start disagreeing about what a list looks like.
+    /// </summary>
+    public static async Task<IReadOnlyList<int>> IdsAsync(this HttpResponseMessage response)
+    {
+        response.EnsureSuccessStatusCode();
+
+        return [.. (await response.BodyAsync())
+            .EnumerateArray()
+            .Select(row => row.GetProperty("id").GetInt32())];
+    }
+
+    /// <summary>
     /// The machine-readable code a refusal carries in its ProblemDetails extensions. Tests
     /// match on this and never on the prose, which is the contract the API documents.
     /// </summary>

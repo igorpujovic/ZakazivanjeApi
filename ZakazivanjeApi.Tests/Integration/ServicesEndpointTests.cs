@@ -32,17 +32,7 @@ public class ServicesEndpointTests(SalonApiFactory factory)
 
     /// <summary>The ids the public menu is offering, read without a token.</summary>
     private async Task<IReadOnlyList<int>> MenuIdsAsync() =>
-        await IdsIn(await _client.GetWithTokenAsync("/api/services", null));
-
-    /// <summary>The ids in a list response, which is all any of these tests asks of one.</summary>
-    private static async Task<IReadOnlyList<int>> IdsIn(HttpResponseMessage response)
-    {
-        response.EnsureSuccessStatusCode();
-
-        return [.. (await response.BodyAsync())
-            .EnumerateArray()
-            .Select(service => service.GetProperty("id").GetInt32())];
-    }
+        await (await _client.GetWithTokenAsync("/api/services", null)).IdsAsync();
 
     /// <summary>
     /// A scheduled booking against <paramref name="serviceId"/>, written straight to the
@@ -145,8 +135,8 @@ public class ServicesEndpointTests(SalonApiFactory factory)
 
         // The catalogue holds what has been withdrawn; the menu does not. Without the flag an
         // admin sees exactly what a client sees, so the default contract has not moved.
-        Assert.Contains(id, await IdsIn(catalogue));
-        Assert.DoesNotContain(id, await IdsIn(menu));
+        Assert.Contains(id, await catalogue.IdsAsync());
+        Assert.DoesNotContain(id, await menu.IdsAsync());
     }
 
     [Fact]
@@ -173,11 +163,11 @@ public class ServicesEndpointTests(SalonApiFactory factory)
     }
 
     [Theory]
-    [InlineData(null)]
-    [InlineData("client")]
-    public async Task Serves_the_menu_to_anyone_who_asks_for_no_more_than_the_menu(string? role)
+    [InlineData(false)]
+    [InlineData(true)]
+    public async Task Serves_the_menu_to_anyone_who_asks_for_no_more_than_the_menu(bool asClient)
     {
-        var token = role is null ? null : await _client.NewClientTokenAsync();
+        var token = asClient ? await _client.NewClientTokenAsync() : null;
 
         var response = await _client.GetWithTokenAsync(
             "/api/services?includeInactive=false", token);
@@ -357,8 +347,8 @@ public class ServicesEndpointTests(SalonApiFactory factory)
         // Still in the catalogue, which is how an admin finds it in order to do this at all.
         Assert.Contains(
             serviceId,
-            await IdsIn(await _client.GetWithTokenAsync(
-                "/api/services?includeInactive=true", admin)));
+            await (await _client.GetWithTokenAsync(
+                "/api/services?includeInactive=true", admin)).IdsAsync());
 
         (await _client.PutWithTokenAsync(
             $"/api/services/{serviceId}",

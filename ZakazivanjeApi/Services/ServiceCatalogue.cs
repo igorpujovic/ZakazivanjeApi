@@ -6,7 +6,10 @@ using ZakazivanjeApi.Entities;
 
 namespace ZakazivanjeApi.Services;
 
-/// <summary>The menu of services, over the specification's <c>Service</c> table.</summary>
+/// <summary>
+/// The services the salon sells — the menu, and the withdrawn ones the catalogue keeps beside
+/// it — over the specification's <c>Service</c> table.
+/// </summary>
 public class ServiceCatalogue(SalonDbContext db) : IServiceCatalogue
 {
     public async Task<IReadOnlyList<ServiceResponse>> ListAsync(
