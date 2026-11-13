@@ -18,6 +18,23 @@ public static class SalonApiClient
     /// A fresh address, because every test shares one database and one is never enough to tell
     /// which test left a row behind.
     /// </summary>
+    /// <summary>
+    /// The next such weekday a week or more from today. A week out, so that a test about a
+    /// rule — working hours, overlap, the slot grid — is never also a test about how close to
+    /// now the clock has crept, and so that nothing it books is ever refused for being past.
+    /// </summary>
+    public static DateOnly NextWeekday(DayOfWeek weekday)
+    {
+        var day = DateOnly.FromDateTime(DateTime.Today).AddDays(7);
+
+        while (day.DayOfWeek != weekday)
+        {
+            day = day.AddDays(1);
+        }
+
+        return day;
+    }
+
     public static string NewEmail(string prefix) => $"{prefix}-{Guid.NewGuid():N}@salon.test";
 
     public static Task<HttpResponseMessage> RegisterAsync(
@@ -137,6 +154,13 @@ public static class SalonApiClient
 
     public static async Task<JsonElement> BodyAsync(this HttpResponseMessage response) =>
         await response.Content.ReadFromJsonAsync<JsonElement>();
+
+    /// <summary>
+    /// The machine-readable code a refusal carries in its ProblemDetails extensions. Tests
+    /// match on this and never on the prose, which is the contract the API documents.
+    /// </summary>
+    public static async Task<string?> CodeAsync(this HttpResponseMessage response) =>
+        (await response.BodyAsync()).GetProperty("code").GetString();
 
     /// <summary>
     /// The field names a <c>ValidationProblemDetails</c> is complaining about. Callers compare

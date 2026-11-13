@@ -21,9 +21,22 @@ begins — do not overlap and are both allowed.
 
 ## Consequences
 
-Concurrent booking attempts for the same stylist serialise and the second one waits. At
-one salon's volume this is invisible, and the transaction spans one indexed query and one
-insert.
+Concurrent booking attempts for the same stylist serialise, and the second one waits where
+it can. At one salon's volume this is invisible, and the transaction spans one indexed query
+and one insert.
+
+It does not always merely wait. Two transactions that have both taken a shared range lock
+over the same stretch of a stylist's schedule and then both try to insert into it deadlock,
+and SQL Server kills one of them with error 1205 rather than letting it wait — the common
+outcome when two requests arrive for the same start, as the integration test shows. The
+loser's transaction is rolled back and nothing of it was written, so booking creation
+retries it, up to three attempts: the retry reads what the winner committed and then refuses
+with `booking_overlap` on the merits, which is the answer the client should have had. A
+start still contended after every attempt is answered `409 booking_contended`, telling the
+caller to try again, because a race over a chair is not a server fault and a bare `500` says
+nothing anybody can act on. This is a consequence of the decision and not a change to it:
+without the retry, the deadlock the serializable transaction causes would surface as a
+`500` exactly where the rule it protects was working correctly.
 
 Correctness here cannot be demonstrated by a unit test. It needs an integration test
 issuing two genuinely concurrent requests against a real SQL Server instance, which is why

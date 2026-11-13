@@ -24,6 +24,14 @@ public readonly record struct TimeInterval(DateTime Start, DateTime End)
     }
 
     /// <summary>
+    /// The whole of one salon day, midnight to midnight. Half-open like every other interval,
+    /// so the day a booking belongs to is the day it starts on and a day never shares a moment
+    /// with the next one.
+    /// </summary>
+    public static TimeInterval Day(DateOnly date) =>
+        new(date.ToDateTime(TimeOnly.MinValue), date.AddDays(1).ToDateTime(TimeOnly.MinValue));
+
+    /// <summary>
     /// Whether the two share any time at all. Touching intervals — one ending exactly as the
     /// other begins — do not, so neither comparison may be made inclusive.
     /// </summary>

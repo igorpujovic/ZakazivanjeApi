@@ -145,6 +145,18 @@ public class BookingRules(IOptions<WorkingHoursOptions> workingHours, TimeProvid
     }
 
     /// <summary>
+    /// Whether a booking starting at <paramref name="start"/> may be marked done. Only once it
+    /// has started, and the start itself counts: the gate is on the start rather than the end so
+    /// a stylist who finishes early can still close the booking out (see the spec's status
+    /// table). Whether the booking is still open to being closed is
+    /// <see cref="BookingTransitions"/>'s question, not this one.
+    /// </summary>
+    public BookingRuleResult CheckCompletion(DateTime start) =>
+        Now < start
+            ? BookingRuleResult.Refused(BookingRuleFailure.NotStarted())
+            : BookingRuleResult.Allowed;
+
+    /// <summary>
     /// Whether the whole interval falls inside that weekday's working hours. The test is on the
     /// end as well as the start, so a service that would run past closing is refused. A weekday
     /// with no working hours is a closed day, and nothing fits inside it.

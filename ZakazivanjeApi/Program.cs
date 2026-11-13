@@ -66,6 +66,7 @@ builder.Services.AddScoped<IStylistCatalogue, StylistCatalogue>();
 // instance, so slot generation and booking cannot end up reading two different sets of hours.
 builder.Services.AddSingleton<BookingRules>();
 builder.Services.AddScoped<ISlotFinder, SlotFinder>();
+builder.Services.AddScoped<IBookingService, BookingService>();
 builder.Services.AddScoped<DatabaseInitializer>();
 
 var app = builder.Build();

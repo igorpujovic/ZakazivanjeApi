@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using ZakazivanjeApi.Data;
 using ZakazivanjeApi.Domain;
 using ZakazivanjeApi.Dtos;
-using ZakazivanjeApi.Entities;
 
 namespace ZakazivanjeApi.Services;
 
@@ -47,34 +46,7 @@ public class SlotFinder(SalonDbContext db, BookingRules rules) : ISlotFinder
             rules.AvailableSlots(
                 date,
                 service.DurationMinutes,
-                await BusyAsync(stylistId, date, cancellationToken)));
-    }
-
-    /// <summary>
-    /// What already occupies the stylist on that day. Cancelled bookings are left out by naming
-    /// the two statuses that count rather than by excluding the one that does not, so a status
-    /// added later has to be considered rather than quietly occupying time.
-    /// </summary>
-    private async Task<IReadOnlyCollection<TimeInterval>> BusyAsync(
-        int stylistId, DateOnly date, CancellationToken cancellationToken)
-    {
-        var dayStart = date.ToDateTime(TimeOnly.MinValue);
-        var dayEnd = dayStart.AddDays(1);
-
-        var bookings = await db.Bookings
-            .AsNoTracking()
-            .Where(booking =>
-                booking.StylistId == stylistId
-                && (booking.Status == BookingStatus.Scheduled
-                    || booking.Status == BookingStatus.Completed)
-
-                // The same half-open overlap the rules use, against the day itself: a booking
-                // is loaded because it shares time with the day, not because it starts in it.
-                && booking.Start < dayEnd
-                && booking.End > dayStart)
-            .Select(booking => new { booking.Start, booking.End })
-            .ToListAsync(cancellationToken);
-
-        return [.. bookings.Select(booking => new TimeInterval(booking.Start, booking.End))];
+                await db.Bookings.BusyAsync(
+                    stylistId, TimeInterval.Day(date), cancellationToken)));
     }
 }

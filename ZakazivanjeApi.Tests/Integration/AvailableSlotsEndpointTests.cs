@@ -17,24 +17,9 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
     private readonly HttpClient _client = factory.CreateClient();
 
     /// <summary>
-    /// A weekday at least a week out, so a test about the grid is never also a test about the
-    /// past-start filter. That filter has a test of its own below.
-    /// </summary>
-    private static DateOnly Next(DayOfWeek weekday)
-    {
-        var day = DateOnly.FromDateTime(DateTime.Today).AddDays(7);
-
-        while (day.DayOfWeek != weekday)
-        {
-            day = day.AddDays(1);
-        }
-
-        return day;
-    }
-
-    /// <summary>
-    /// A booking written straight to the database, because the endpoint that would make one
-    /// arrives in issue 06 and this endpoint has to be right before it exists.
+    /// A booking written straight to the database rather than through
+    /// <c>POST /api/bookings</c>, so that a failure here is a failure of the endpoint under
+    /// test and never of the one that set it up.
     /// </summary>
     private Task<int> BookAsync(
         int stylistId,
@@ -75,8 +60,8 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
         });
 
     /// <summary>
-    /// Calls a booking off in the database, for the same reason: <c>PUT
-    /// /api/bookings/{id}/cancel</c> arrives in issue 06.
+    /// Calls a booking off in the database, for the same reason, rather than through
+    /// <c>PUT /api/bookings/{id}/cancel</c>.
     /// </summary>
     private async Task CancelAsync(int bookingId) =>
         await factory.WithDbAsync(async db =>
@@ -104,7 +89,7 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
     [Fact]
     public async Task Offers_the_specifications_worked_example_end_to_end()
     {
-        var monday = Next(DayOfWeek.Monday);
+        var monday = NextWeekday(DayOfWeek.Monday);
         var stylistId = await _client.NewStylistAsync();
         var serviceId = await _client.NewServiceAsync("Coloring", 90);
 
@@ -143,7 +128,7 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
     public async Task Answers_an_unknown_stylist_with_a_not_found_rather_than_an_empty_day()
     {
         var response = await SlotsAsync(
-            987654321, await _client.NewServiceAsync("Coloring", 45), Next(DayOfWeek.Monday));
+            987654321, await _client.NewServiceAsync("Coloring", 45), NextWeekday(DayOfWeek.Monday));
 
         // "Nothing free" and "nobody to be free" are different answers, and a client told the
         // first would simply try again tomorrow.
@@ -156,7 +141,7 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
     public async Task Answers_an_unknown_service_with_a_not_found()
     {
         var response = await SlotsAsync(
-            await _client.NewStylistAsync(), 987654321, Next(DayOfWeek.Monday));
+            await _client.NewStylistAsync(), 987654321, NextWeekday(DayOfWeek.Monday));
 
         Assert.Equal(HttpStatusCode.NotFound, response.StatusCode);
         Assert.Equal(
@@ -169,7 +154,7 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
         var response = await SlotsAsync(
             await _client.NewStylistAsync(),
             await _client.NewServiceAsync("Coloring", 45),
-            Next(DayOfWeek.Sunday));
+            NextWeekday(DayOfWeek.Sunday));
 
         // Closed is not broken. A client asking about Sunday gets a day with no starts in it.
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
@@ -188,7 +173,7 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
             new { name = "Jelena", isActive = false }))
             .EnsureSuccessStatusCode();
 
-        var response = await SlotsAsync(stylistId, serviceId, Next(DayOfWeek.Monday));
+        var response = await SlotsAsync(stylistId, serviceId, NextWeekday(DayOfWeek.Monday));
 
         // Not a 404: the stylist is still there, and every booking ever taken against them
         // still resolves (ADR-0004). They simply take nothing new.
@@ -206,7 +191,7 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
             $"/api/services/{serviceId}", await _client.AdminTokenAsync()))
             .EnsureSuccessStatusCode();
 
-        var response = await SlotsAsync(stylistId, serviceId, Next(DayOfWeek.Monday));
+        var response = await SlotsAsync(stylistId, serviceId, NextWeekday(DayOfWeek.Monday));
 
         Assert.Equal(HttpStatusCode.OK, response.StatusCode);
         Assert.Empty(StartsIn(await response.BodyAsync()));
@@ -231,7 +216,7 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
     [Fact]
     public async Task Gives_a_cancelled_bookings_time_back()
     {
-        var monday = Next(DayOfWeek.Monday);
+        var monday = NextWeekday(DayOfWeek.Monday);
         var stylistId = await _client.NewStylistAsync();
         var serviceId = await _client.NewServiceAsync("Coloring", 45);
 
@@ -255,7 +240,7 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
     [Fact]
     public async Task Keeps_a_completed_bookings_time_occupied()
     {
-        var monday = Next(DayOfWeek.Monday);
+        var monday = NextWeekday(DayOfWeek.Monday);
         var stylistId = await _client.NewStylistAsync();
         var serviceId = await _client.NewServiceAsync("Coloring", 45);
 
@@ -275,7 +260,7 @@ public class AvailableSlotsEndpointTests(SalonApiFactory factory)
     [Fact]
     public async Task Offers_nothing_earlier_than_now_when_the_day_asked_about_is_today()
     {
-        var monday = Next(DayOfWeek.Monday);
+        var monday = NextWeekday(DayOfWeek.Monday);
         var stylistId = await _client.NewStylistAsync();
         var serviceId = await _client.NewServiceAsync("Coloring", 60);
 

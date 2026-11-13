@@ -1,3 +1,5 @@
+using ZakazivanjeApi.Entities;
+
 namespace ZakazivanjeApi.Domain;
 
 /// <summary>
@@ -24,6 +26,26 @@ public sealed record BookingRuleFailure(string Code, string Message)
             "cancellation_too_late",
             $"A booking can only be cancelled up to {deadline.TotalHours:0.#} hours before it "
                 + "starts.");
+
+    /// <summary>
+    /// A code per status a booking can already be in, rather than one for "not scheduled".
+    /// Which way a booking already went decides what a caller does next — nothing, or look at
+    /// the other outcome — and the specification is explicit that nobody should have to read
+    /// the prose to find out.
+    /// </summary>
+    internal static BookingRuleFailure AlreadyIs(BookingStatus current) => current switch
+    {
+        BookingStatus.Cancelled => new(
+            "booking_already_cancelled", "That booking has already been cancelled."),
+        BookingStatus.Completed => new(
+            "booking_already_completed", "That booking has already been completed."),
+        _ => new("booking_already_scheduled", "That booking is already scheduled."),
+    };
+
+    internal static BookingRuleFailure NotStarted() =>
+        new(
+            "booking_not_started",
+            "A booking cannot be marked completed before it has started.");
 
     internal static BookingRuleFailure StylistInactive() =>
         new("stylist_inactive", "That stylist is no longer taking bookings.");
