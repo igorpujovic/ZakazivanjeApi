@@ -19,7 +19,12 @@ export function EmptyState({
 }) {
   return (
     <div className="flex flex-col items-center gap-3 rounded-panel border border-dashed border-line-strong bg-surface-sunken/50 px-6 py-10 text-center">
-      <p className="font-display text-xl text-ink">{title}</p>
+      {/*
+        A heading, not styled text: this is the title of whatever the visitor is looking at
+        instead of the thing they expected, and someone reading the page through a screen
+        reader's heading list has as much business finding it as any other title.
+      */}
+      <h2 className="font-display text-xl text-ink">{title}</h2>
       {children !== undefined && (
         <p className="max-w-prose text-sm text-ink-soft">{children}</p>
       )}

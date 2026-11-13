@@ -1,7 +1,10 @@
-import { createBrowserRouter } from 'react-router-dom'
+import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 
+import { RequireAdmin, RequireSession } from '../auth/guards'
+import { LoginPage } from '../pages/LoginPage'
+import { RegisterPage } from '../pages/RegisterPage'
 import { EmptyState } from '../ui/EmptyState'
-import { AppShell } from './AppShell'
+import { AppRoot } from './AppRoot'
 import { Pending } from './Pending'
 
 /**
@@ -14,21 +17,41 @@ import { Pending } from './Pending'
  *
  * Create and edit open a side panel rather than a route, which is what keeps this list at
  * eight.
+ *
+ * Who may see what is expressed here, as two guard layouts, rather than inside each page: the
+ * rule sits next to the addresses it governs, and a page added to a guarded group inherits it
+ * without anyone having to remember.
  */
 
-export const router = createBrowserRouter([
+/** Exported separately from {@link router} so tests can mount the real tree in memory. */
+export const routes: RouteObject[] = [
   {
     path: '/',
-    element: <AppShell />,
+    element: <AppRoot />,
     children: [
       { index: true, element: <Pending screen="The menu" issue="05" /> },
-      { path: 'book', element: <Pending screen="Book an appointment" issue="05" /> },
-      { path: 'bookings', element: <Pending screen="My bookings" issue="06" /> },
-      { path: 'login', element: <Pending screen="Sign in" issue="04" /> },
-      { path: 'register', element: <Pending screen="Create an account" issue="04" /> },
-      { path: 'admin/bookings', element: <Pending screen="All bookings" issue="07" /> },
-      { path: 'admin/services', element: <Pending screen="Services" issue="08" /> },
-      { path: 'admin/stylists', element: <Pending screen="Stylists" issue="08" /> },
+
+      { path: 'login', element: <LoginPage /> },
+      { path: 'register', element: <RegisterPage /> },
+
+      {
+        element: <RequireSession />,
+        children: [
+          { path: 'book', element: <Pending screen="Book an appointment" issue="05" /> },
+          { path: 'bookings', element: <Pending screen="My bookings" issue="06" /> },
+        ],
+      },
+
+      {
+        path: 'admin',
+        element: <RequireAdmin />,
+        children: [
+          { path: 'bookings', element: <Pending screen="All bookings" issue="07" /> },
+          { path: 'services', element: <Pending screen="Services" issue="08" /> },
+          { path: 'stylists', element: <Pending screen="Stylists" issue="08" /> },
+        ],
+      },
+
       {
         path: '*',
         element: (
@@ -39,4 +62,6 @@ export const router = createBrowserRouter([
       },
     ],
   },
-])
+]
+
+export const router = createBrowserRouter(routes)

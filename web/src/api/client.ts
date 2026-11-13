@@ -54,6 +54,18 @@ export interface RequestOptions {
   query?: Record<string, QueryValue>
   body?: unknown
   signal?: AbortSignal
+
+  /**
+   * This request does not carry the session: no `Authorization` header, and a `401` from it
+   * says nothing about whether the session is alive.
+   *
+   * Only the two `/auth` routes are anonymous, and both have to be. `POST /api/auth/login`
+   * answers `401` with `invalid_credentials`, so without this an admin who mistyped their own
+   * password on `/login` would have their live session destroyed and be redirected away from
+   * the screen holding the message for them — and sending the old token along with a request
+   * to obtain a new one makes no sense in the first place.
+   */
+  anonymous?: boolean
 }
 
 /**
@@ -67,13 +79,15 @@ export interface RequestOptions {
  * runtime would be a second schema to maintain.
  */
 export async function request<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { method = 'GET', query, body, signal } = options
+  const { method = 'GET', query, body, signal, anonymous = false } = options
 
   const headers = new Headers({ Accept: 'application/json' })
   if (body !== undefined) headers.set('Content-Type', 'application/json')
 
-  const token = getToken()
-  if (token !== undefined) headers.set('Authorization', `Bearer ${token}`)
+  if (!anonymous) {
+    const token = getToken()
+    if (token !== undefined) headers.set('Authorization', `Bearer ${token}`)
+  }
 
   let response: Response
   try {
@@ -90,9 +104,12 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 
   if (!response.ok) {
     const error = problemToApiError(response.status, await readBody(response))
-    // A 401 means the token is absent, expired or rejected. The session clears itself and
-    // sends the visitor to login; the error still propagates so the caller can stop.
-    if (response.status === 401) onUnauthorized?.()
+
+    // Any 401 on a request that carried the session means that session is finished: the
+    // session clears itself and sends the visitor to login. An `anonymous` request carries no
+    // session, so its 401 is about the credentials in the request — see `RequestOptions`.
+    if (response.status === 401 && !anonymous) onUnauthorized?.()
+
     throw error
   }
 

@@ -39,3 +39,36 @@ produce mystery failures.
 - A session stored with a past `expiresAt` is gone on startup, with no request sent.
 - Pasting `/admin/bookings` as a client is refused, and as an admin works.
 - A `401` mid-session returns you to login and brings you back to the same path after signing in.
+
+## Comments
+
+**Implemented.** One refinement to the scope, recorded here because it narrows a sentence this
+file and `../spec.md` both state unconditionally.
+
+The scope says: "Any `401` from the wrapper clears the session and redirects to
+`/login?returnTo=<path>`." That cannot hold for every `401`, because `POST /api/auth/login`
+answers `401` with `invalid_credentials` — verified against a running instance. Taken
+literally, an admin who mistyped their own password on `/login` would have their live session
+destroyed and be redirected away from the screen holding the message for them.
+
+The rule as built: the two `/auth` routes are marked `anonymous` in the API client, meaning they
+carry no session and their `401` says nothing about one. Every request that *does* carry the
+session still follows the sentence exactly, including one sent after the session was already
+cleared. "Any `401` on a request that carried the session" is the honest wording, and
+`web/src/api/client.ts` documents it at the branch.
+
+Two other decisions worth knowing, neither a change of scope:
+
+- The five-minute warning is **derived from the clock**, not scheduled. A forward-only timer
+  never warns a visitor who reloads a tab with three minutes left — it signs them out with no
+  notice in the window where notice matters most. `sessionStatus` in `web/src/auth/session.ts`
+  answers what the session looks like now and when to ask again, so there is no moment to miss,
+  and the count falls a minute at a time instead of sitting on its first value.
+- Expiry **clears the session and stops**; the route guard then performs the redirect with the
+  right `returnTo` for wherever the visitor is. One redirect path rather than two.
+
+Still unverified by any test: the four form-level "Done when" items (the register-into-login
+chain, `email_taken` on the email field, the identical wrong-password copy, and the
+register-succeeded-login-failed fallback). The tests cover the guards and the pure modules. All
+four were exercised by hand against a running API; none has an automated test, because
+`../spec.md` scopes MSW to the booking page and the admin bookings table in issue 09.
