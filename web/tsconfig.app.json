@@ -17,6 +17,10 @@
     "jsx": "react-jsx",
 
     /* Linting */
+    // On, and verified to cost nothing: the application and the tests both typecheck
+    // clean under it. The branded wall-clock types and the generated schema are full of
+    // optional properties, and without this the editor would agree with neither.
+    "strict": true,
     "noUnusedLocals": true,
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,

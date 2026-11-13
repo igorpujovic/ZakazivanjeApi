@@ -1072,7 +1072,7 @@ export interface components {
             accessToken: string;
             tokenType: string;
             /** Format: date-time */
-            expiresAt: WallClock;
+            expiresAt: string;
             user: components["schemas"]["UserResponse"];
         };
         AvailableSlotsResponse: {

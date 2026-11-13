@@ -11,7 +11,8 @@
  *
  * 2. Dates arrive as `string`. ADR-0001 keeps them local salon wall-clock with no offset,
  *    which JavaScript mishandles in two specific ways (see `src/lib/wallClock.ts`), so they
- *    are branded here and can only be produced by that module.
+ *    are branded here and can only be produced by that module. One date is exempt, for the
+ *    reason given at `EXEMPT_LINES` below: it is a real instant and not a wall-clock reading.
  *
  * Doing this as a codemod rather than a hand-written second set of types keeps one generated
  * artifact as the single source: regenerating after an API change cannot silently drop the
@@ -51,6 +52,32 @@ const BY_EXACT_LINE = [
   { find: '            slots: string[];', replace: '            slots: WallClock[];' },
 ]
 
+/**
+ * Exemptions, by the exact generated line.
+ *
+ * `AuthResponse.expiresAt` is the one time in this API that is not wall-clock. It is a
+ * `DateTimeOffset` built from `timeProvider.GetUtcNow()` (`JwtTokenService`), so it carries a
+ * zone and really is an instant: when the token stops being accepted, not a reading on the
+ * salon's wall. ADR-0001 governs the salon's times; a token's death is not one of them.
+ *
+ * In the OpenAPI document it is `{"type": "string", "format": "date-time"}` — indistinguishable
+ * from every `DateTime` in the API, verified against the running document. So the format rules
+ * would brand it `WallClock`, and the brand would be a lie that TypeScript then enforces:
+ * `asWallClock` rejects an offset, `partsOf` throws on one, and comparing it against
+ * `nowWallClock()` compares an instant with a local reading. That lands precisely on the
+ * session rule in issue 04 — discard a stored session whose `expiresAt` has passed.
+ *
+ * It stays `string` and is parsed as an instant with `Date.parse`. That is not the banned
+ * conversion: `src/lib/noConversions.test.ts` bans manufacturing UTC out of a zoneless value,
+ * and this value carries its zone.
+ *
+ * Listed rather than skipped silently, so it is counted below like every other rule and this
+ * exits non-zero if the API stops emitting the line — which is what should happen, because by
+ * then this comment is out of date. Matching is on the whole line, indentation included, so a
+ * property of the same name at another depth would not be caught by it.
+ */
+const EXEMPT_LINES = ['            expiresAt: string;']
+
 const counts = new Map()
 const bump = (key) => counts.set(key, (counts.get(key) ?? 0) + 1)
 
@@ -76,6 +103,13 @@ for (const line of lines) {
     continue
   }
 
+  if (pendingFormat && EXEMPT_LINES.includes(line)) {
+    bump(`exempt:${line.trim()}`)
+    out.push(line)
+    pendingFormat = null
+    continue
+  }
+
   if (pendingFormat) {
     const rule = BY_FORMAT.find((r) => r.format === pendingFormat)
     if (rule && rule.find.test(line)) {
@@ -94,6 +128,7 @@ for (const line of lines) {
 const expected = [
   ...BY_FORMAT.map((r) => `format:${r.format}`),
   ...BY_EXACT_LINE.map((r) => `line:${r.find.trim()}`),
+  ...EXEMPT_LINES.map((l) => `exempt:${l.trim()}`),
 ]
 
 // `int64` and `decimal` are listed defensively: the API does not currently emit either, so
