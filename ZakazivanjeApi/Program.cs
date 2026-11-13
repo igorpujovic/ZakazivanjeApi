@@ -12,6 +12,9 @@ var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
 
+// The browser origins allowed to call this API, from configuration. See FrontendCors.
+builder.Services.AddFrontendCors();
+
 // The document Scalar renders. The transformers put the bearer scheme in it and mark which
 // operations need one, which is what lets a reader log in and exercise the protected endpoints
 // from the browser rather than from curl.
@@ -125,6 +128,12 @@ if (app.Environment.IsDevelopment())
         .WithTitle(DocumentInfoTransformer.Title)
         .AddPreferredSecuritySchemes(BearerSecurityTransformer.SchemeName));
 }
+
+// After routing, which minimal hosting has already run by the time any of this executes, and
+// before authentication: a 401 needs the allow header too, or the browser hands the frontend a
+// network error instead of the refusal. Before the HTTPS redirect as well, because a browser
+// does not follow a redirect on a preflight — it reports it as a CORS failure.
+app.UseCors(FrontendCors.PolicyName);
 
 app.UseHttpsRedirection();
 

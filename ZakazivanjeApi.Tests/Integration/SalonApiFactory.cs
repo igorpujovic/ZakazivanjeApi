@@ -30,6 +30,13 @@ public sealed class SalonApiFactory : WebApplicationFactory<Program>, IAsyncLife
 
     public const string AdminPassword = "Seeded-Admin-Pass-1";
 
+    /// <summary>
+    /// The one origin the tests configure as allowed. Deliberately not the Vite origin the
+    /// shipped development configuration names, so that a passing CORS test is evidence the
+    /// policy reads its origins from configuration rather than evidence of a literal.
+    /// </summary>
+    public const string AllowedOrigin = "https://frontend.salon.test";
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         // Development, so the application migrates its own database on startup exactly as it
@@ -49,6 +56,7 @@ public sealed class SalonApiFactory : WebApplicationFactory<Program>, IAsyncLife
                 ["Jwt:LifetimeMinutes"] = "60",
                 ["Admin:Email"] = AdminEmail,
                 ["Admin:Password"] = AdminPassword,
+                ["Cors:AllowedOrigins:0"] = AllowedOrigin,
             }));
 
         // The probe routes, added to the running application rather than built into it, so the

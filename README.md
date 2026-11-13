@@ -87,7 +87,21 @@ Order matters outside Development, where the application does not migrate for yo
 migrations before the first start, or seeding will run against a schema that has no `Users`
 table and the start will fail.
 
-### 3. Run
+### 3. Browser origins
+
+| Key                   | What it is                                            |
+| --------------------- | ----------------------------------------------------- |
+| `Cors:AllowedOrigins` | JSON array of origins a browser may call the API from |
+
+Set, to the Vite dev server's `http://localhost:5173`, in `appsettings.Development.json`; as
+environment variables the entries are indexed, `Cors__AllowedOrigins__0`. An empty or absent
+list means "no cross-origin callers" and starts normally. The policy allows `GET`, `POST`,
+`PUT` and `DELETE` with `Authorization` and `Content-Type`, and not credentials — the session
+is a bearer token in a header, not a cookie. The frontend's dev server proxies `/api`, so
+development never exercises any of it; it exists so the API is honestly consumable from a
+browser on another origin rather than only from behind a proxy that hides the problem.
+
+### 4. Run
 
 ```bash
 dotnet run --project ZakazivanjeApi
