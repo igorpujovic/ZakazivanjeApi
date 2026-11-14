@@ -104,6 +104,7 @@ export const EMAIL_TAKEN = problem(
 type Get = Parameters<typeof http.get>[1]
 type Post = Parameters<typeof http.post>[1]
 type Put = Parameters<typeof http.put>[1]
+type Delete = Parameters<typeof http.delete>[1]
 
 export const api = {
   login: (resolver: Post) => http.post(`${API}/auth/login`, resolver),
@@ -111,6 +112,31 @@ export const api = {
 
   services: (resolver: Get) => http.get(`${API}/services`, resolver),
   stylists: (resolver: Get) => http.get(`${API}/stylists`, resolver),
+
+  /**
+   * One service by id — the only route in the API that answers with a *withdrawn* service by
+   * id, which is why the admin edit panel opens through it rather than off the row it was
+   * clicked from.
+   */
+  service: (resolver: Get) => http.get(`${API}/services/:id`, resolver),
+
+  createService: (resolver: Post) => http.post(`${API}/services`, resolver),
+  updateService: (resolver: Put) => http.put(`${API}/services/:id`, resolver),
+
+  /**
+   * `DELETE`, and nothing is deleted: it sets `IsActive` false and leaves the row and every
+   * booking against it exactly where they were. The verb matches what an admin means by it,
+   * not what the database does — and the word reaches no screen (`catalogue/withdrawal.ts`).
+   */
+  withdrawService: (resolver: Delete) => http.delete(`${API}/services/:id`, resolver),
+
+  createStylist: (resolver: Post) => http.post(`${API}/stylists`, resolver),
+
+  /**
+   * There is no `DELETE` for a stylist. Every booking ever taken points at one, so retiring
+   * is `PUT` with `isActive: false` — the same route that renames one.
+   */
+  updateStylist: (resolver: Put) => http.put(`${API}/stylists/:id`, resolver),
 
   /** One handler for every stylist: the resolver reads `params.id` to answer as that one. */
   availableSlots: (resolver: Get) => http.get(`${API}/stylists/:id/available-slots`, resolver),

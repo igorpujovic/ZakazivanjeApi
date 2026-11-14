@@ -5,11 +5,12 @@ import { BookPage } from '../pages/BookPage'
 import { LoginPage } from '../pages/LoginPage'
 import { MenuPage } from '../pages/MenuPage'
 import { AdminBookingsPage } from '../pages/AdminBookingsPage'
+import { AdminServicesPage } from '../pages/AdminServicesPage'
+import { AdminStylistsPage } from '../pages/AdminStylistsPage'
 import { MyBookingsPage } from '../pages/MyBookingsPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { EmptyState } from '../ui/EmptyState'
 import { AppRoot } from './AppRoot'
-import { Pending } from './Pending'
 
 /**
  * The eight routes, and nothing more.
@@ -51,8 +52,8 @@ export const routes: RouteObject[] = [
         element: <RequireAdmin />,
         children: [
           { path: 'bookings', element: <AdminBookingsPage /> },
-          { path: 'services', element: <Pending screen="Services" issue="08" /> },
-          { path: 'stylists', element: <Pending screen="Stylists" issue="08" /> },
+          { path: 'services', element: <AdminServicesPage /> },
+          { path: 'stylists', element: <AdminStylistsPage /> },
         ],
       },
 

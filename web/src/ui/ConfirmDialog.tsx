@@ -2,6 +2,7 @@ import * as Dialog from '@radix-ui/react-dialog'
 import type { ReactNode } from 'react'
 
 import { Button } from './Button'
+import { useOpenerFocus } from './openerFocus'
 
 /**
  * "Are you sure?", asked properly.
@@ -50,6 +51,16 @@ export interface ConfirmDialogProps {
   /** Shown inside the dialog, where the question was asked, if agreeing was refused. */
   error?: string
 
+  /**
+   * The control this was opened from, which focus goes back to when it closes.
+   *
+   * Optional, because the screen that asks before cancelling a booking opens this from a
+   * button that may be gone by the time the question is answered. Where it is passed — the
+   * catalogue's activation toggle, which is still there afterwards — it is remembered at the
+   * click rather than by Radix, for the reason `openerFocus.ts` sets out.
+   */
+  opener?: HTMLElement
+
   onConfirm: () => void
 }
 
@@ -63,8 +74,11 @@ export function ConfirmDialog({
   tone = 'primary',
   pending = false,
   error,
+  opener,
   onConfirm,
 }: ConfirmDialogProps) {
+  const restoreFocus = useOpenerFocus(open, opener)
+
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -88,6 +102,7 @@ export function ConfirmDialog({
            */
           onPointerDownOutside={(event) => pending && event.preventDefault()}
           onEscapeKeyDown={(event) => pending && event.preventDefault()}
+          onCloseAutoFocus={restoreFocus}
         >
           <Dialog.Title className="font-display text-xl text-ink">{title}</Dialog.Title>
 
