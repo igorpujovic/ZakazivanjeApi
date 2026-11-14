@@ -16,7 +16,15 @@ import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 import { afterAll, afterEach, beforeAll } from 'vitest'
 
-import type { AuthResult, AvailableSlots, Booking, Service, Stylist, User } from '../api/dto'
+import type {
+  AuthResult,
+  AvailableSlots,
+  Booking,
+  PagedBookings,
+  Service,
+  Stylist,
+  User,
+} from '../api/dto'
 import type { components } from '../api/schema'
 import { asWallClock, asWallClockDate } from '../lib/wallClock'
 
@@ -110,12 +118,18 @@ export const api = {
   createBooking: (resolver: Post) => http.post(`${API}/bookings`, resolver),
   myBookings: (resolver: Get) => http.get(`${API}/bookings/my`, resolver),
 
+  /** Every booking the salon has taken, a page at a time. The admin screen's one list. */
+  bookings: (resolver: Get) => http.get(`${API}/bookings`, resolver),
+
   /**
    * `PUT`, not `DELETE`: cancelling is a status transition, and the booking survives it —
    * `Cancelled` is a status a client can still see, not a row that goes away (ADR-0004).
    * The resolver reads `params.id` to say which booking was asked about.
    */
   cancelBooking: (resolver: Put) => http.put(`${API}/bookings/:id/cancel`, resolver),
+
+  /** The salon's word that a booking was carried out. Admin only, and only once it has started. */
+  completeBooking: (resolver: Put) => http.put(`${API}/bookings/:id/complete`, resolver),
 }
 
 export { http, HttpResponse }
@@ -255,4 +269,40 @@ export const ALREADY_CANCELLED = problem(
   409,
   'booking_already_cancelled',
   'That booking has already been cancelled.',
+)
+
+// -- The admin's day -------------------------------------------------------------------
+//
+// Added by issue 07. `GET /api/bookings` is the one paginated endpoint in the API, and the
+// four numbers beside `items` are the point of this builder: a test states what the response
+// *says* it did, so the screen can be held to reporting that rather than what it asked for.
+
+/**
+ * A page of the whole salon's bookings.
+ *
+ * The four counts default to a single page holding exactly what was passed, and every test
+ * about paging overrides them — including with numbers that disagree with `items.length`,
+ * which is not a broken fixture but the two cases that matter: the last page of many, and a
+ * page number past the end.
+ */
+export const pagedBookings = (
+  items: Booking[],
+  overrides: Partial<Omit<PagedBookings, 'items'>> = {},
+): PagedBookings => ({
+  items,
+  page: 1,
+  pageSize: 20,
+  totalCount: items.length,
+  totalPages: 1,
+  ...overrides,
+})
+
+/**
+ * Already resolved by somebody else. Two admins on the same day is the obvious cause, which is
+ * why the screen answers both of these with a refetch rather than only a sentence.
+ */
+export const ALREADY_COMPLETED = problem(
+  409,
+  'booking_already_completed',
+  'That booking has already been completed.',
 )

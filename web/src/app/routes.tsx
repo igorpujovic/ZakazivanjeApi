@@ -4,6 +4,7 @@ import { RequireAdmin, RequireSession } from '../auth/guards'
 import { BookPage } from '../pages/BookPage'
 import { LoginPage } from '../pages/LoginPage'
 import { MenuPage } from '../pages/MenuPage'
+import { AdminBookingsPage } from '../pages/AdminBookingsPage'
 import { MyBookingsPage } from '../pages/MyBookingsPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { EmptyState } from '../ui/EmptyState'
@@ -49,7 +50,7 @@ export const routes: RouteObject[] = [
         path: 'admin',
         element: <RequireAdmin />,
         children: [
-          { path: 'bookings', element: <Pending screen="All bookings" issue="07" /> },
+          { path: 'bookings', element: <AdminBookingsPage /> },
           { path: 'services', element: <Pending screen="Services" issue="08" /> },
           { path: 'stylists', element: <Pending screen="Stylists" issue="08" /> },
         ],

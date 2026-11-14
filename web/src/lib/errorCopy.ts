@@ -55,6 +55,19 @@ const COPY: Record<HandledErrorCode, ErrorCopy> = {
     recovery: 'none',
   },
 
+  /*
+   * Not a refusal this application ever provokes, and that is the point of having the words
+   * here: `/admin/bookings` disables Complete until the start has passed, and the sentence
+   * explaining why has to be the one the refusal would have used. `copyForCode` is how the
+   * screen reaches it, exactly as `/bookings` reaches the deadline's.
+   *
+   * "Completed" rather than "done", which `GLOSSARY.md` lists as a word to avoid for it.
+   */
+  booking_not_started: {
+    message: 'A booking can only be completed once it has started.',
+    recovery: 'none',
+  },
+
   // The API answers identically for an unknown email and a wrong password, on purpose, so the
   // endpoint cannot be used to find out who has an account. The UI must not undermine that by
   // being more specific than the API was.

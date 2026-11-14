@@ -96,9 +96,17 @@ type HandledErrorCode =
   | "stylist_inactive"
   | "service_inactive"
   | "cancellation_too_late"
+  | "booking_not_started"
   | "invalid_credentials"
   | "email_taken";
 ```
+
+`booking_not_started` is in the union without the UI ever provoking it, which is the criterion
+working as stated rather than an exception to it: the admin bookings screen disables Complete
+until `Start` has passed, and the sentence explaining why has to be the one the refusal would
+have used. `booking_already_cancelled` and `booking_already_completed` are deliberately *not*
+here, though the same screen reacts to both — the API's own `detail` already says the only
+useful thing, and what that screen adds is a refetch rather than better words. See issue 07.
 
 The raw `code: string` sits beside it. Switches over the union are exhaustive with a `default`
 that renders `detail` — which is what the API's README promises `detail` is for, and means a

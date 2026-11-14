@@ -31,6 +31,7 @@ export type HandledErrorCode =
   | 'stylist_inactive'
   | 'service_inactive'
   | 'cancellation_too_late'
+  | 'booking_not_started'
   | 'invalid_credentials'
   | 'email_taken'
 
@@ -41,6 +42,7 @@ const HANDLED: ReadonlySet<string> = new Set<HandledErrorCode>([
   'stylist_inactive',
   'service_inactive',
   'cancellation_too_late',
+  'booking_not_started',
   'invalid_credentials',
   'email_taken',
 ])
