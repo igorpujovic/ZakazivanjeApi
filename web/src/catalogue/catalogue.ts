@@ -20,6 +20,13 @@ import type { Service, Stylist } from '../api/dto'
  * `includeInactive` appears in the key, because the two answers are genuinely different
  * lists — an admin ticking "Show inactive" must not be served the menu out of the cache.
  */
+/**
+ * The two prefixes everything else here hangs off, named once so `roots` cannot drift from
+ * the individual ones.
+ */
+const SERVICE_ROOT = ['services'] as const
+const STYLIST_ROOT = ['stylists'] as const
+
 export const catalogueKeys = {
   services: (includeInactive: boolean) => ['services', { includeInactive }] as const,
   stylists: (includeInactive: boolean) => ['stylists', { includeInactive }] as const,
@@ -39,11 +46,11 @@ export const catalogueKeys = {
    * invalidation reaches the menu and the admin's wider view of the same endpoint together.
    * That is what makes a service withdrawn on `/admin/services` leave the menu on `/`.
    */
-  serviceRoot: ['services'] as const,
-  stylistRoot: ['stylists'] as const,
+  serviceRoot: SERVICE_ROOT,
+  stylistRoot: STYLIST_ROOT,
 
   /** Both lists, for the one caller that has made either of them out of date. */
-  roots: [['services'], ['stylists']] as const,
+  roots: [SERVICE_ROOT, STYLIST_ROOT] as const,
 }
 
 // `true` or nothing: `?includeInactive=false` would be an admin-only parameter on an

@@ -32,8 +32,16 @@ import { openerNow } from '../ui/openerFocus'
 import { catalogueKeys } from './catalogue'
 import type { CatalogueAdmin, CatalogueRow } from './catalogueAdmin'
 
-/** What the panel is for: a row being changed, or a new one. */
-type Editing<Row> = { row: Row } | { row: undefined }
+/**
+ * What the panel is for: a row being changed, or a new one.
+ *
+ * Wrapped in an object rather than held as `Row | undefined`, because the panel has three
+ * states and not two — closed, open on a row, and open on nothing — and the outer `undefined`
+ * is what tells the first apart from the third.
+ */
+interface Editing<Row> {
+  row: Row | undefined
+}
 
 export interface CatalogueEditor<Row extends CatalogueRow, Draft> {
   open: boolean
@@ -119,8 +127,18 @@ export function useCatalogueEditor<Row extends CatalogueRow, Draft extends objec
   }
 
   const mutation = useMutation({
+    /*
+     * Updated against `source`, not against the row that was clicked.
+     *
+     * The difference is `isActive`, and it is the case this panel's request exists for: a
+     * `PUT` is a full replacement, so the flag it carries is the one the service will have
+     * afterwards. Taken from the row, correcting a typo in a service somebody withdrew while
+     * this list was open would put it back on the menu — the silent reactivation
+     * `UpdateServiceRequest` requires the flag in order to prevent. Taken from the answer the
+     * panel opened on, it carries what is actually true.
+     */
     mutationFn: (sending: Draft) =>
-      row === undefined ? admin.create(sending) : admin.update(row, sending),
+      source === undefined ? admin.create(sending) : admin.update(source, sending),
 
     onSuccess: async () => {
       setEditing(undefined)
@@ -177,7 +195,20 @@ export function useCatalogueEditor<Row extends CatalogueRow, Draft extends objec
     loading,
     draft,
 
-    change: (patch) => setEdits((current) => ({ ...current, ...patch })),
+    change: (patch) => {
+      setEdits((current) => ({ ...current, ...patch }))
+
+      /*
+       * The server's complaint was about the value that was sent, so a box changed since is no
+       * longer the box it describes. Only the fields being edited are cleared: a `400` can name
+       * two, and correcting one of them says nothing about the other.
+       */
+      setFieldErrors((current) => {
+        const left = { ...current }
+        for (const field of Object.keys(patch)) delete left[field as keyof Draft & string]
+        return left
+      })
+    },
 
     create: () => {
       reset()

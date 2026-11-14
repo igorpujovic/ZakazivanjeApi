@@ -1,10 +1,11 @@
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
 
 import { ActivationToggle } from '../catalogue/ActivationToggle'
+import { PanelActions } from '../catalogue/PanelActions'
 import { servicesQuery } from '../catalogue/catalogue'
 import { serviceAdmin } from '../catalogue/catalogueAdmin'
 import { useActivation } from '../catalogue/useActivation'
+import { useIncludeInactive } from '../catalogue/useIncludeInactive'
 import { useCatalogueEditor, type CatalogueEditor } from '../catalogue/useCatalogueEditor'
 import type { ServiceDraft } from '../catalogue/catalogueDraft'
 import { WithdrawalDialog } from '../catalogue/WithdrawalDialog'
@@ -37,12 +38,8 @@ import { Td, Th, TableFrame, Tr } from '../ui/Table'
  * layout is attempted: an admin curating a catalogue is at a desk.
  */
 
-/** The wider view, in the address, so it survives a refresh and can be sent to somebody. */
-const INCLUDE_INACTIVE = 'includeInactive'
-
 export function AdminServicesPage() {
-  const [params, setParams] = useSearchParams()
-  const includeInactive = params.get(INCLUDE_INACTIVE) === 'true'
+  const [includeInactive, setIncludeInactive] = useIncludeInactive()
 
   const services = useQuery(servicesQuery(includeInactive))
   const activation = useActivation(serviceAdmin)
@@ -64,9 +61,7 @@ export function AdminServicesPage() {
         <CheckField
           label="Show inactive"
           checked={includeInactive}
-          onChange={(event) =>
-            setParams(event.target.checked ? { [INCLUDE_INACTIVE]: 'true' } : {})
-          }
+          onChange={(event) => setIncludeInactive(event.target.checked)}
         />
 
         <Button onClick={editor.create}>Add a service</Button>
@@ -255,14 +250,7 @@ function ServicePanel({ editor }: { editor: CatalogueEditor<Service, ServiceDraf
             </p>
           )}
 
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" disabled={editor.saving} onClick={editor.close}>
-              Close
-            </Button>
-            <Button type="submit" disabled={editor.saving}>
-              {editor.saving ? 'Saving…' : 'Save'}
-            </Button>
-          </div>
+          <PanelActions saving={editor.saving} onClose={editor.close} />
         </form>
       )}
     </SidePanel>

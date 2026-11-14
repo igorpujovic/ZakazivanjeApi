@@ -2,8 +2,17 @@ import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
-import { api, HttpResponse, server, serveMockApi, service } from '../test/apiMocks'
+import {
+  api,
+  booking,
+  HttpResponse,
+  pagedBookings,
+  server,
+  serveMockApi,
+  service,
+} from '../test/apiMocks'
 import { renderRoute, signedInAs } from '../test/renderRoute'
+import { asWallClock, todayWallClockDate } from '../lib/wallClock'
 
 /**
  * `/admin/services`: the catalogue, which is not the menu.
@@ -274,6 +283,68 @@ describe('what a client sees', () => {
 
     await typist.click(screen.getByRole('link', { name: 'Menu' }))
     expect(await screen.findByText('Women’s cut')).toBeInTheDocument()
+  })
+})
+
+/**
+ * The third of the ticket's first line: withdrawing leaves **every booking against it**
+ * untouched.
+ *
+ * ADR-0004 is why — withdrawing sets a flag and the row stays, so the bookings taken against
+ * it stay `Scheduled` for the salon to resolve one by one — and ADR-0003 is why the row still
+ * reads correctly afterwards, each booking carrying its own snapshot of the name and price.
+ * The frontend's share is that it asks for the day and renders what comes back, so this is the
+ * journey from the withdrawal to the day it might have disturbed.
+ */
+describe('the bookings already made against it', () => {
+  const TODAY = todayWallClockDate()
+
+  it('are exactly as they were after the service is withdrawn', async () => {
+    let onTheMenu = true
+
+    server.use(
+      api.services(() => HttpResponse.json([{ ...WOMENS_CUT, isActive: onTheMenu }])),
+      api.withdrawService(() => {
+        onTheMenu = false
+        return new HttpResponse(null, { status: 204 })
+      }),
+      api.stylists(() => HttpResponse.json([{ id: 1, name: 'Ana', isActive: true }])),
+
+      api.bookings(() =>
+        HttpResponse.json(
+          pagedBookings([
+            booking({
+              id: 41,
+              start: asWallClock(`${TODAY}T09:00:00`),
+              end: asWallClock(`${TODAY}T10:00:00`),
+              serviceName: 'Women’s cut',
+              price: 2500,
+              status: 'Scheduled',
+            }),
+          ]),
+        ),
+      ),
+    )
+
+    signedInAs('Admin')
+    renderRoute('/admin/services?includeInactive=true', { staleTime: Infinity })
+
+    const typist = userEvent.setup()
+    await typist.click(await screen.findByRole('switch', { name: /Women’s cut/ }))
+    await typist.click(
+      within(await screen.findByRole('dialog')).getByRole('button', { name: /withdraw it/i }),
+    )
+
+    await screen.findByText('Inactive')
+
+    await typist.click(screen.getByRole('link', { name: /all bookings/i }))
+
+    // Still there, still named, still at the price it was taken at, and still the salon's to
+    // resolve — a withdrawal is not a cancellation.
+    expect(await screen.findByText('Mina Marić')).toBeInTheDocument()
+    expect(screen.getByText('Women’s cut')).toBeInTheDocument()
+    expect(screen.getByText('2.500 RSD')).toBeInTheDocument()
+    expect(screen.getByText('Scheduled')).toBeInTheDocument()
   })
 })
 

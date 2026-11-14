@@ -1,12 +1,13 @@
 import { useQuery } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router-dom'
 
 import type { Stylist } from '../api/dto'
 import { ActivationToggle } from '../catalogue/ActivationToggle'
+import { PanelActions } from '../catalogue/PanelActions'
 import { stylistsQuery } from '../catalogue/catalogue'
 import { stylistAdmin } from '../catalogue/catalogueAdmin'
 import type { StylistDraft } from '../catalogue/catalogueDraft'
 import { useActivation } from '../catalogue/useActivation'
+import { useIncludeInactive } from '../catalogue/useIncludeInactive'
 import { useCatalogueEditor, type CatalogueEditor } from '../catalogue/useCatalogueEditor'
 import { WithdrawalDialog } from '../catalogue/WithdrawalDialog'
 import { messageFor } from '../lib/errorCopy'
@@ -34,11 +35,8 @@ import { Td, Th, TableFrame, Tr } from '../ui/Table'
  * the row rather than on a fresh answer. Both are settled in `catalogueAdmin.ts`.
  */
 
-const INCLUDE_INACTIVE = 'includeInactive'
-
 export function AdminStylistsPage() {
-  const [params, setParams] = useSearchParams()
-  const includeInactive = params.get(INCLUDE_INACTIVE) === 'true'
+  const [includeInactive, setIncludeInactive] = useIncludeInactive()
 
   const stylists = useQuery(stylistsQuery(includeInactive))
   const activation = useActivation(stylistAdmin)
@@ -60,9 +58,7 @@ export function AdminStylistsPage() {
         <CheckField
           label="Show inactive"
           checked={includeInactive}
-          onChange={(event) =>
-            setParams(event.target.checked ? { [INCLUDE_INACTIVE]: 'true' } : {})
-          }
+          onChange={(event) => setIncludeInactive(event.target.checked)}
         />
 
         <Button onClick={editor.create}>Add a stylist</Button>
@@ -194,14 +190,7 @@ function StylistPanel({ editor }: { editor: CatalogueEditor<Stylist, StylistDraf
             </p>
           )}
 
-          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Button variant="secondary" disabled={editor.saving} onClick={editor.close}>
-              Close
-            </Button>
-            <Button type="submit" disabled={editor.saving}>
-              {editor.saving ? 'Saving…' : 'Save'}
-            </Button>
-          </div>
+          <PanelActions saving={editor.saving} onClose={editor.close} />
         </form>
       )}
     </SidePanel>

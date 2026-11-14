@@ -130,6 +130,48 @@ describe('what the panel sends', () => {
     await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
   })
 
+  /**
+   * And the activation comes from that same fresh answer, not from the row.
+   *
+   * This is the case the panel's request exists for. Somebody withdrew the service while this
+   * admin had the list open; they then correct a typo in its name. If the flag were read off
+   * the row they clicked, that correction would put a withdrawn service back on the menu — the
+   * silent reactivation `UpdateServiceRequest` requires `IsActive` in order to prevent.
+   */
+  it('takes the activation from the API’s answer too, not from the stale row', async () => {
+    const bodies: unknown[] = []
+
+    server.use(
+      // The list, fetched before somebody else withdrew it: still saying active.
+      api.services(() => HttpResponse.json([WOMENS_CUT])),
+
+      // The truth, as of opening the panel.
+      api.service(() => HttpResponse.json({ ...WOMENS_CUT, isActive: false })),
+
+      api.updateService(async ({ request }) => {
+        bodies.push(await request.json())
+        return HttpResponse.json({ ...WOMENS_CUT, isActive: false })
+      }),
+    )
+
+    signedInAs('Admin')
+    renderRoute('/admin/services')
+
+    const typist = userEvent.setup()
+    await typist.click(await screen.findByRole('button', { name: /edit women’s cut/i }))
+
+    const name = await screen.findByLabelText(/name/i)
+    await typist.clear(name)
+    await typist.type(name, 'Women’s cut')
+    await typist.click(screen.getByRole('button', { name: /save/i }))
+
+    await waitFor(() =>
+      expect(bodies).toEqual([
+        { name: 'Women’s cut', durationMinutes: 60, price: 2500, isActive: false },
+      ]),
+    )
+  })
+
   /** `CreateServiceRequest` has no `IsActive` at all: a new service is always on the menu. */
   it('creates a service without sending an activation', async () => {
     const bodies: Record<string, unknown>[] = []
@@ -229,6 +271,17 @@ describe('what the panel refuses', () => {
     // Refused, so the panel stays up with what was typed still in it.
     expect(screen.getByRole('dialog')).toBeInTheDocument()
     expect(name).toHaveValue('   ')
+
+    /*
+     * And the complaint goes as soon as the field it is about is touched. It was about the
+     * name that was sent, so a box that has been changed since is no longer the box it
+     * describes — leaving it there would have the form arguing with somebody who has already
+     * done what it asked.
+     */
+    await typist.type(name, 'Beard trim')
+
+    expect(screen.queryByText('The Name field is required.')).not.toBeInTheDocument()
+    expect(name).not.toHaveAttribute('aria-invalid')
   })
 })
 
