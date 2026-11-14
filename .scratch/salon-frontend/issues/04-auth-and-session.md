@@ -1,6 +1,6 @@
 # 04 - Auth: login, register, the session, route guards
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 03
 

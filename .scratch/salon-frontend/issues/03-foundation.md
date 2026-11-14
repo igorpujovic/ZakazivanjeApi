@@ -1,6 +1,6 @@
 # 03 - Foundation: scaffold, generated types, API client, wall-clock
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Spec: `../spec.md`

@@ -1,6 +1,6 @@
 # 01 - API: a CORS policy with origins from configuration
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Spec: `../spec.md`
