@@ -4,6 +4,7 @@ import { RequireAdmin, RequireSession } from '../auth/guards'
 import { BookPage } from '../pages/BookPage'
 import { LoginPage } from '../pages/LoginPage'
 import { MenuPage } from '../pages/MenuPage'
+import { MyBookingsPage } from '../pages/MyBookingsPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { EmptyState } from '../ui/EmptyState'
 import { AppRoot } from './AppRoot'
@@ -40,7 +41,7 @@ export const routes: RouteObject[] = [
         element: <RequireSession />,
         children: [
           { path: 'book', element: <BookPage /> },
-          { path: 'bookings', element: <Pending screen="My bookings" issue="06" /> },
+          { path: 'bookings', element: <MyBookingsPage /> },
         ],
       },
 

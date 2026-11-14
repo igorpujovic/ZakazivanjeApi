@@ -95,6 +95,7 @@ export const EMAIL_TAKEN = problem(
 
 type Get = Parameters<typeof http.get>[1]
 type Post = Parameters<typeof http.post>[1]
+type Put = Parameters<typeof http.put>[1]
 
 export const api = {
   login: (resolver: Post) => http.post(`${API}/auth/login`, resolver),
@@ -108,6 +109,13 @@ export const api = {
 
   createBooking: (resolver: Post) => http.post(`${API}/bookings`, resolver),
   myBookings: (resolver: Get) => http.get(`${API}/bookings/my`, resolver),
+
+  /**
+   * `PUT`, not `DELETE`: cancelling is a status transition, and the booking survives it —
+   * `Cancelled` is a status a client can still see, not a row that goes away (ADR-0004).
+   * The resolver reads `params.id` to say which booking was asked about.
+   */
+  cancelBooking: (resolver: Put) => http.put(`${API}/bookings/:id/cancel`, resolver),
 }
 
 export { http, HttpResponse }
@@ -221,3 +229,30 @@ export const SERVICE_WITHDRAWN = problem(
 
 /** A `500`: logged server-side, and the body says nothing more than the code. */
 export const UNFORESEEN = problem(500, 'internal_error')
+
+// -- Cancelling ------------------------------------------------------------------------
+//
+// Added by issue 06. The two refusals `PUT /api/bookings/{id}/cancel` can give a client, with
+// the API's own `detail` in both — which is the point of the first one: the screen has to be
+// shown replacing that sentence with words that name the deadline.
+
+/**
+ * The **Cancellation Deadline** has passed. `detail` is deliberately the API's generic prose,
+ * because `/bookings` is required to say something better than this.
+ */
+export const CANCEL_TOO_LATE = problem(
+  409,
+  'cancellation_too_late',
+  'A booking can no longer be cancelled.',
+)
+
+/**
+ * The status would not allow it. A code the UI has no distinct copy for, on purpose: the API's
+ * `detail` already says the only useful thing, so this is what falling through to it looks
+ * like (see `api/errors.ts`).
+ */
+export const ALREADY_CANCELLED = problem(
+  409,
+  'booking_already_cancelled',
+  'That booking has already been cancelled.',
+)

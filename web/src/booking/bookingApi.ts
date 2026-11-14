@@ -60,3 +60,36 @@ export function availableSlotsQuery(target: SlotsFor) {
 export function createBooking(body: CreateBookingBody): Promise<Booking> {
   return api.post<Booking>('/bookings', body)
 }
+
+/**
+ * The signed-in client's own bookings, all of them, past included.
+ *
+ * Scoped by the token, not by a parameter: `GET /api/bookings/my` reads the caller's id from
+ * the JWT, so there is no client id to pass and none to get wrong. Which is also why nothing
+ * here filters by `clientId` afterwards — the answer *is* this client's bookings, and a second
+ * filter in the browser would be a weaker copy of a rule the API already enforces where it
+ * cannot be bypassed.
+ *
+ * Ordered `Start` then `Id` ascending by the API, which puts the oldest appointment in the
+ * client's history first. `myBookings.ts` splits that into the two groups the screen shows.
+ */
+export function myBookingsQuery() {
+  return queryOptions({
+    queryKey: bookingKeys.mine,
+    queryFn: ({ signal }) => api.get<Booking[]>('/bookings/my', { signal }),
+  })
+}
+
+/**
+ * Call a booking off.
+ *
+ * `PUT .../cancel`, not `DELETE`: the booking survives, with `Cancelled` as its status — which
+ * a client can still see, and which releases the stylist's time. ADR-0004, and the reason the
+ * UI never says "delete" here either.
+ *
+ * Answers the updated booking, so the row's new status comes back with the response rather
+ * than needing a refetch to be believed.
+ */
+export function cancelBooking(bookingId: number): Promise<Booking> {
+  return api.put<Booking>(`/bookings/${bookingId}/cancel`)
+}
