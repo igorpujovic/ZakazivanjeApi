@@ -1,6 +1,6 @@
 import { cleanup, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { describe, expect, it } from 'vitest'
 
 import {
   api,
@@ -9,6 +9,7 @@ import {
   EMAIL_TAKEN,
   HttpResponse,
   server,
+  serveMockApi,
   user,
 } from '../test/apiMocks'
 import { renderRoute } from '../test/renderRoute'
@@ -26,23 +27,7 @@ import { renderRoute } from '../test/renderRoute'
  * `test/apiMocks.ts`.
  */
 
-beforeAll(() => {
-  // An unhandled request fails loudly. A test whose mock silently missed would otherwise pass
-  // by reaching nothing at all.
-  server.listen({ onUnhandledFrame: 'error' })
-})
-
-afterEach(() => {
-  server.resetHandlers()
-})
-
-afterAll(() => {
-  server.close()
-})
-
-beforeEach(() => {
-  sessionStorage.clear()
-})
+serveMockApi()
 
 const fillRegisterForm = async () => {
   const typist = userEvent.setup()

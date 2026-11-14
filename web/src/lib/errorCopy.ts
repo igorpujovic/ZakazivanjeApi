@@ -8,7 +8,7 @@
  * Anything not listed here falls through to `detail`, deliberately. See `api/errors.ts`.
  */
 
-import { isHandledErrorCode, type ApiError, type HandledErrorCode } from '../api/errors'
+import { isApiError, isHandledErrorCode, type ApiError, type HandledErrorCode } from '../api/errors'
 
 export interface ErrorCopy {
   /** One line, addressed to the person, saying what happened. */
@@ -85,4 +85,29 @@ export function copyFor(error: ApiError): ErrorCopy {
   if (isHandledErrorCode(error.code)) return COPY[error.code]
   if (error.detail !== undefined) return { message: error.detail, recovery: 'none' }
   return FALLBACK
+}
+
+/**
+ * The copy for a code, with no refusal in hand.
+ *
+ * For the screen that knows a thing is withdrawn without having been refused — a stale link
+ * naming a service that is no longer on the menu, say. The words have to be the same ones the
+ * refusal would have used, so this is the way to reach them rather than retyping the sentence
+ * somewhere it could drift from this file.
+ */
+export function copyForCode(code: HandledErrorCode): ErrorCopy {
+  return COPY[code]
+}
+
+/**
+ * One line for anything that went wrong, refusal or not.
+ *
+ * Every screen needs this and none of them should have to spell out the three cases: the API
+ * refused and we have words for it, the API could not be reached, or something unforeseen.
+ * See `NetworkError` for why the first two are worth telling apart.
+ */
+export function messageFor(error: unknown): string {
+  if (isApiError(error)) return copyFor(error).message
+  if (error instanceof Error) return error.message
+  return FALLBACK.message
 }

@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 
+import type { Slot } from '../booking/slots'
 import { addMinutes, formatRange, type WallClock } from '../lib/wallClock'
 
 /**
@@ -13,25 +14,28 @@ import { addMinutes, formatRange, type WallClock } from '../lib/wallClock'
  * hold — two people can be shown the same start and the first to confirm takes it — and
  * someone who has been told that reads "that time was just taken" as the system working.
  */
-export interface Slot {
-  start: WallClock
-  /** Present only when the visitor chose No preference and the grid is merged. */
-  stylistId?: number
-  stylistName?: string
-}
-
 export function SlotGrid({
   slots,
   durationMinutes,
   selected,
   onSelect,
   disabled,
+  withStylistNames = false,
 }: {
   slots: readonly Slot[]
   durationMinutes: number
   selected?: WallClock
   onSelect: (slot: Slot) => void
   disabled?: boolean
+
+  /**
+   * Whether to name the stylist on each button.
+   *
+   * Every slot knows its stylist — a booking cannot be made without one — but saying so is
+   * only worth the space when the grid is a merge of several of them. A visitor who asked for
+   * Ana by name does not need twelve buttons reminding them.
+   */
+  withStylistNames?: boolean
 }) {
   const container = useRef<HTMLDivElement>(null)
 
@@ -71,7 +75,7 @@ export function SlotGrid({
           const isSelected = slot.start === selected
           return (
             <button
-              key={`${slot.start}-${slot.stylistId ?? 'any'}`}
+              key={`${slot.start}-${slot.stylistId}`}
               type="button"
               data-slot={slot.start}
               disabled={disabled}
@@ -88,7 +92,7 @@ export function SlotGrid({
               <span className="font-medium tabular-nums">
                 {formatRange(slot.start, addMinutes(slot.start, durationMinutes))}
               </span>
-              {slot.stylistName !== undefined && (
+              {withStylistNames && (
                 <span
                   className={isSelected ? 'text-xs text-white/80' : 'text-xs text-ink-faint'}
                 >

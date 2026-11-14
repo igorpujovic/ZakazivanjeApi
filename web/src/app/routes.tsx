@@ -1,7 +1,9 @@
 import { createBrowserRouter, type RouteObject } from 'react-router-dom'
 
 import { RequireAdmin, RequireSession } from '../auth/guards'
+import { BookPage } from '../pages/BookPage'
 import { LoginPage } from '../pages/LoginPage'
+import { MenuPage } from '../pages/MenuPage'
 import { RegisterPage } from '../pages/RegisterPage'
 import { EmptyState } from '../ui/EmptyState'
 import { AppRoot } from './AppRoot'
@@ -29,7 +31,7 @@ export const routes: RouteObject[] = [
     path: '/',
     element: <AppRoot />,
     children: [
-      { index: true, element: <Pending screen="The menu" issue="05" /> },
+      { index: true, element: <MenuPage /> },
 
       { path: 'login', element: <LoginPage /> },
       { path: 'register', element: <RegisterPage /> },
@@ -37,7 +39,7 @@ export const routes: RouteObject[] = [
       {
         element: <RequireSession />,
         children: [
-          { path: 'book', element: <Pending screen="Book an appointment" issue="05" /> },
+          { path: 'book', element: <BookPage /> },
           { path: 'bookings', element: <Pending screen="My bookings" issue="06" /> },
         ],
       },
