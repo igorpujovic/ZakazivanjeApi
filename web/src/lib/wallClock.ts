@@ -24,8 +24,9 @@
  *   3. Comparison needs no `Date` at all. These strings are fixed-width and big-endian, so
  *      lexicographic order *is* chronological order.
  *
- * `toISOString` and `toJSON` are banned in `src/` by lint, and the tests run under a forced
- * `TZ` of Asia/Kolkata — a half-hour offset, so naive arithmetic fails loudly.
+ * `toISOString` and `toJSON` are banned in `src/` by a test — `noConversions.test.ts`, since
+ * oxlint has no `no-restricted-syntax` — and the tests run under a forced `TZ` of Asia/Kolkata,
+ * a half-hour offset, so naive arithmetic fails loudly.
  *
  * See ADR-0011.
  */

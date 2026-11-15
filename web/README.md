@@ -41,7 +41,7 @@ npm run dev
 `src/api/schema.d.ts`, which is committed, and then runs `scripts/narrow-schema.mjs` over it —
 read that script's header before changing it.
 
-## Two things that will surprise you
+## Three things that will surprise you
 
 **Times are local salon wall-clock with no offset** (ADR-0001), which JavaScript mishandles in
 two specific ways. Everything date-shaped goes through `src/lib/wallClock.ts`, nothing else may
@@ -51,3 +51,10 @@ construct a `Date` from an API string, and `toISOString`/`toJSON` are banned in 
 **A slot is an offer, not a hold.** Two clients can be shown the same start and the first to
 confirm takes it, so losing a booking to a race is normal operation. `src/lib/errorCopy.ts`
 maps each refusal to what the UI should do about it.
+
+**Registering does not sign you in.** `POST /api/auth/register` answers `201` with no token, so
+`RegisterPage` chains a login with the credentials already in memory. Two requests for one
+button, deliberate on both sides.
+
+The root [`README.md`](../README.md#the-web-frontend) has the rest: running both halves,
+regenerating the types, the mobile-first-client / desktop-first-admin split, and screenshots.

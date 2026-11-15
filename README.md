@@ -1,23 +1,28 @@
 # Salon Booking API
 
 REST API for a single hair salon. Clients browse services and stylists, see available times
-and book or cancel appointments. Admins manage the catalogue and every booking.
+and book or cancel appointments. Admins manage the catalogue and every booking. A React
+frontend for it lives in [`web/`](web) — see [The web frontend](#the-web-frontend).
 
 **Start with [`GLOSSARY.md`](GLOSSARY.md) and [`docs/adr/`](docs/adr).** The glossary is the
-vocabulary the code is written in — client, stylist, slot, active, scheduled — and the eight
+vocabulary the code is written in — client, stylist, slot, active, scheduled — and the twelve
 ADRs are where the decisions that are not obvious from the code are argued: local wall-clock
 time, a serializable transaction for overlap, no ASP.NET Core Identity, soft delete, one error
-envelope. Nobody finds those by reading the controllers. The specification they implement is
-[`.scratch/salon-booking/spec.md`](.scratch/salon-booking/spec.md).
+envelope, and on the frontend's side React over Blazor and what that cost. Nobody finds those
+by reading the controllers. The specifications they implement are
+[`.scratch/salon-booking/spec.md`](.scratch/salon-booking/spec.md) and
+[`.scratch/salon-frontend/spec.md`](.scratch/salon-frontend/spec.md).
 
-Stack: C#, ASP.NET Core Web API, EF Core, SQL Server, xUnit. Targets `net11.0`.
+Stack: C#, ASP.NET Core Web API, EF Core, SQL Server, xUnit. Targets `net11.0`. The frontend is
+React, TypeScript, Vite and Vitest.
 
 ## Projects
 
-| Project                | What it is                                                      |
+| Project / directory    | What it is                                                      |
 | ---------------------- | --------------------------------------------------------------- |
 | `ZakazivanjeApi`       | The API. Folders: `Controllers/`, `Services/`, `Domain/`, `Data/`, `Entities/`, `Dtos/` |
 | `ZakazivanjeApi.Tests` | xUnit tests                                                      |
+| `web/`                 | The browser frontend. Its own npm project, outside the `.sln`    |
 
 Booking rules live in `Domain/` as classes that touch neither EF Core nor the database, so
 they can be tested without one (ADR-0007).
@@ -108,6 +113,9 @@ dotnet run --project ZakazivanjeApi
 ```
 
 Then open <http://localhost:5056/scalar> — see [API docs](#api-docs) below.
+
+That is the API alone. To run the frontend against it as well, see
+[Running both halves](#running-both-halves).
 
 ## Endpoints
 
@@ -269,3 +277,118 @@ under a uniquely-named database that is migrated at the start of the run and dro
 end, so they need a working `(localdb)\mssqllocaldb`. They supply their own connection string,
 JWT key and admin credentials last, so those win over anything your user-secrets hold and a
 test run never touches your development database.
+
+## The web frontend
+
+`web/` is the browser client for this API: clients browse the menu, pick a time and book or
+cancel; admins curate the catalogue and work the day's bookings. React, TypeScript, Vite,
+TanStack Query, React Router, Tailwind — a separate npm project, deliberately outside
+`ZakazivanjeApi.sln`, talking to this API over HTTP like any other caller (ADR-0009).
+[`web/README.md`](web/README.md) is its own doorway; its specification is
+[`.scratch/salon-frontend/spec.md`](.scratch/salon-frontend/spec.md).
+
+### Running both halves
+
+Two processes. The API first, from the repository root, as in [Run](#4-run) above:
+
+```bash
+dotnet run --project ZakazivanjeApi
+```
+
+Then the frontend, from `web/`:
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open <http://localhost:5173>. Nothing else is configured: no API key, no environment file, no
+build step before `dev`. The dev server proxies `/api` and `/openapi` to `localhost:5056`, so
+development is same-origin — the policy in [Browser origins](#3-browser-origins) is not what
+makes this work, and exists so the API is honestly consumable from a browser elsewhere rather
+than only from behind this proxy.
+
+Register through the UI to browse as a client. To reach `/admin/bookings`, `/admin/services`
+and `/admin/stylists`, sign in with the `Admin:Email` and `Admin:Password` seeded at startup —
+there is no way to register as an admin, by design (see [Authentication](#authentication)).
+
+The frontend's own tests are `npm run test` in `web/`: Vitest over the pure modules, and React
+Testing Library with MSW over the booking page and the admin bookings table. They need neither
+the API nor a database running.
+
+### The wire contract
+
+The frontend shares no types with this project. `web/src/api/schema.d.ts` is generated from the
+OpenAPI document and committed:
+
+```bash
+cd web
+npm run generate:api   # needs the API running: /openapi is Development-only
+```
+
+That command is the only thing keeping the two halves in agreement — the price ADR-0009 pays
+for not being Blazor, which could have referenced `Dtos/` directly. Read the diff it produces
+as a contract change, because that is what it is.
+
+### Two viewports, on purpose
+
+**The client side is mobile-first**, designed at 390px and scaled up: most of a salon's traffic
+is someone on a phone, and the menu is the first screen anybody opens. **The admin side is
+desktop-first**, designed at 1280px and held usable down to a tablet, with no phone layout
+attempted — the bookings table is seven columns, the last of them a pair of actions, and a
+receptionist works at a keyboard. Admin tables get `overflow-x: auto` and nothing more: an
+honest horizontal scroll beats a card layout pretending a table was a mistake.
+
+The one screen that earns the mobile effort is the slot grid — touch-sized targets that wrap,
+stylist labels legible at 390px, and arrow-key navigation.
+
+![The menu at 390px](docs/images/web-menu-phone.jpg)
+
+![The day's bookings, as a receptionist sees them](docs/images/web-admin-day.jpg)
+
+### English, with Serbian formatting
+
+The interface is English-only and there is no internationalisation: no message catalogue, no
+locale switch, no `i18n` dependency. Dates, times and money are formatted through `Intl` with
+the `sr-RS` locale, so a price reads `2.500 RSD` and a day reads as a Belgrade salon would
+write it, while the words around them stay English. That split is deliberate rather than
+half-finished: the salon has one location and one language, and the formatting is the half that
+has to be local. It is also the cheapest decision here to reverse, which is why no ADR argues
+it — the copy sits in the components, and extracting it is a day's work for whoever needs a
+second language.
+
+### Register does not sign you in
+
+`POST /api/auth/register` answers `201` with a `UserResponse` and **no token**
+([Authentication](#authentication)), so the frontend chains a login straight after a successful
+register, with the credentials already in memory. Two requests for one button, deliberate on
+both sides rather than a bug in either: the API does not hand out a token for an account it has
+only just been told about, and the form will not ask somebody to type their password twice. If
+the register succeeds and the login fails, the form falls back to `/login` with the email
+prefilled, saying the account was created.
+
+### A slot is an offer, not a hold
+
+Two clients can be shown the same start, and the first to confirm takes it — so
+`booking_overlap` is normal operation rather than an error state, and the grid says as much
+before anybody picks. **No preference** is the frontend's one compensation for the API's
+shape: there is no multi-stylist endpoint, so it asks every active stylist about that day at
+once and merges the answers into one grid, each start labelled with whoever is free for it.
+
+![The slot grid, four stylists' days merged into one](docs/images/web-slot-grid.jpg)
+
+The losing client is told the time went, the grid refetches so it disappears, and their
+service, stylist and day all survive: the alternative is one tap away. Nothing is re-entered,
+and nothing was ever held.
+
+![Losing the race: the time is gone and the rest of the day is not](docs/images/web-overlap-recovery.jpg)
+
+`web/src/lib/errorCopy.ts` maps each refusal to the recovery it calls for, and those recoveries
+are most of what the booking page's tests are about — the headline one answers `booking_overlap`
+from MSW and asserts the grid refetched, the slot is gone, and every other choice survived.
+
+Times on the wire are local salon wall-clock with no offset (ADR-0001), which JavaScript
+mishandles in two specific ways; everything date-shaped goes through one module and nothing
+else may construct a `Date` from an API string (ADR-0011). The bearer token is held in
+`sessionStorage` (ADR-0010).
