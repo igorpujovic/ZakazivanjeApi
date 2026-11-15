@@ -28,12 +28,18 @@ regeneration.** `npm run generate:api` reads the document from a *running* API �
 in Development only — and rewrites `src/api/schema.d.ts`. Between regenerations the frontend
 believes whatever that file last said. An API change that renames or retypes a field is not a
 build failure on the day it is made; it is a build failure the next time somebody regenerates,
-and a runtime surprise until then. Nothing in the repository forces that regeneration, because
-there is no CI story here to hang it on.
+and a runtime surprise until then.
 
 So the generated file is committed rather than built on demand, and it is the diff that makes a
 wire change visible. Reviewing a regeneration is the substitute for the compiler, and it is a
-weaker one — this is the price, stated plainly.
+weaker one.
+
+What narrows the gap is a CI job rather than a convention: `.github/workflows/ci.yml` starts
+the API against a SQL Server container, regenerates the types, and fails if the committed file
+disagrees. A wire change made without regenerating is therefore caught on the push that makes
+it, not whenever somebody next happens to run the command. It is still not the compiler — the
+check runs after the fact rather than refusing to build, and it can only compare against the
+document the API publishes — but the window it leaves is one push wide instead of unbounded.
 
 The generated types are not used quite as generated: `scripts/narrow-schema.mjs` runs inside
 the same npm script and rewrites two things the generator gets faithfully but unhelpfully —

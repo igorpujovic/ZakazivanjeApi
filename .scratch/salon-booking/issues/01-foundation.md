@@ -1,6 +1,6 @@
 # 01 - Foundation: solution, entities, database, admin seeding
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 
 Spec: `../spec.md`

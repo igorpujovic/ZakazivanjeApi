@@ -1,6 +1,6 @@
 # 04 - Booking rules as pure classes, with unit tests
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01
 

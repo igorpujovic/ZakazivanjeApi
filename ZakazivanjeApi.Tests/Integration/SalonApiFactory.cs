@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -37,6 +38,43 @@ public sealed class SalonApiFactory : WebApplicationFactory<Program>, IAsyncLife
     /// </summary>
     public const string AllowedOrigin = "https://frontend.salon.test";
 
+    /// <summary>
+    /// The server the suite builds its database on, when the default is not available.
+    /// </summary>
+    /// <remarks>
+    /// Set it to a connection string naming a server and how to authenticate against it — the
+    /// catalogue in it is ignored, because this class names its own. CI is why it exists: a
+    /// Linux runner has no LocalDB, and a SQL Server in a container is reached by host and
+    /// password rather than by instance name.
+    /// </remarks>
+    public const string ServerOverrideVariable = "SALON_TEST_SQLSERVER";
+
+    /// <summary>
+    /// LocalDB, which the README names as the development prerequisite and which every
+    /// developer running this suite already has.
+    /// </summary>
+    private const string DefaultServer =
+        @"Server=(localdb)\mssqllocaldb;Trusted_Connection=True;TrustServerCertificate=True";
+
+    /// <summary>
+    /// The connection string for this run's own database.
+    /// </summary>
+    /// <remarks>
+    /// Built with <see cref="SqlConnectionStringBuilder"/> rather than by concatenation, so an
+    /// override may name a server any way SQL Server accepts — a host and port, a password, an
+    /// instance — without this class having to know which keywords it used. Only the catalogue
+    /// is ours to set, and setting it is the point: the database is unique to the run, created
+    /// by the application's own migrations and dropped afterwards.
+    /// </remarks>
+    private string ConnectionString =>
+        new SqlConnectionStringBuilder(
+            Environment.GetEnvironmentVariable(ServerOverrideVariable) is { Length: > 0 } server
+                ? server
+                : DefaultServer)
+        {
+            InitialCatalog = _databaseName,
+        }.ConnectionString;
+
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
         // Development, so the application migrates its own database on startup exactly as it
@@ -47,9 +85,7 @@ public sealed class SalonApiFactory : WebApplicationFactory<Program>, IAsyncLife
         builder.ConfigureAppConfiguration((_, configuration) =>
             configuration.AddInMemoryCollection(new Dictionary<string, string?>
             {
-                ["ConnectionStrings:SalonDb"] =
-                    $@"Server=(localdb)\mssqllocaldb;Database={_databaseName};"
-                    + "Trusted_Connection=True;TrustServerCertificate=True",
+                ["ConnectionStrings:SalonDb"] = ConnectionString,
                 ["Jwt:Key"] = "integration-test-signing-key-not-a-real-secret",
                 ["Jwt:Issuer"] = "ZakazivanjeApi.Tests",
                 ["Jwt:Audience"] = "ZakazivanjeApi.Tests",

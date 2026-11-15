@@ -1,6 +1,6 @@
 # 02 - Authentication: register, login, JWT, roles
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 01
 

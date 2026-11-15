@@ -1,0 +1,188 @@
+# Both halves, on every push.
+#
+# Three jobs, because there are three separable claims: the API's own suite passes, the
+# frontend's does and it still builds, and the generated types in `web/src/api/schema.d.ts`
+# still describe the API that is actually running.
+#
+# The third is the one worth having. ADR-0009 declined Blazor and with it a wire contract the
+# compiler checked end to end; what holds the two halves together now is a regeneration step
+# that nothing forces. This runs it and fails if the committed file disagrees, which turns that
+# step from a promise into a check.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+env:
+  DOTNET_VERSION: '11.0.x'
+  NODE_VERSION: '24.x'
+
+  # A throwaway credential for a container that exists for the length of one job and is
+  # reachable only from it. It is written here rather than held as a secret deliberately: a
+  # secret implies something worth protecting, and treating this as one would blur the line
+  # around the keys that genuinely are (see the README on user-secrets).
+  #
+  # It is spelled out again in each `services:` block below rather than referenced, because a
+  # service container's definition is resolved before this is in scope. The two must agree.
+  SA_PASSWORD: 'Ci-Sql-Password-1'
+
+jobs:
+  api:
+    name: API
+    runs-on: ubuntu-latest
+
+    services:
+      # The integration tests start the real application against a real SQL Server, because the
+      # facts they prove — the unique index returning a conflict, a case-insensitive email, the
+      # serializable transaction under contention — do not exist without one. LocalDB is the
+      # local default and does not exist on Linux, so the suite is pointed at this instead.
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: 'Ci-Sql-Password-1'
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Ci-Sql-Password-1' -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 30s
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - name: Restore
+        run: dotnet restore
+
+      - name: Build
+        run: dotnet build --no-restore --configuration Release
+
+      - name: Test
+        # Only the server is overridden. The database is still named and created by the suite
+        # itself, once per run, and dropped afterwards — see SalonApiFactory.
+        env:
+          SALON_TEST_SQLSERVER: Server=localhost,1433;User Id=sa;Password=${{ env.SA_PASSWORD }};TrustServerCertificate=True
+        run: dotnet test --no-build --configuration Release --verbosity normal
+
+  web:
+    name: Frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        # Vitest forces TZ=Asia/Kolkata itself (vite.config.ts), so this passing on a UTC runner
+        # is the same claim it makes on a developer's machine: no wall-clock value is correct
+        # only because the machine agrees with the server. See ADR-0011.
+        run: npm run test
+
+      - name: Build
+        run: npm run build
+
+  contract:
+    name: Generated types match the running API
+    runs-on: ubuntu-latest
+
+    services:
+      sqlserver:
+        image: mcr.microsoft.com/mssql/server:2022-latest
+        env:
+          ACCEPT_EULA: 'Y'
+          MSSQL_SA_PASSWORD: 'Ci-Sql-Password-1'
+        ports:
+          - 1433:1433
+        options: >-
+          --health-cmd "/opt/mssql-tools18/bin/sqlcmd -C -S localhost -U sa -P 'Ci-Sql-Password-1' -Q 'SELECT 1'"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 20
+          --health-start-period 30s
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Start the API
+        # Development, because that is the only environment in which the OpenAPI document is
+        # mapped at all — which is itself a decision worth not quietly working around: the
+        # document describes every route the API has and is for a reader running it locally.
+        # Migrations are applied by the application at startup, as they are locally.
+        env:
+          ASPNETCORE_ENVIRONMENT: Development
+          ASPNETCORE_URLS: http://localhost:5056
+          ConnectionStrings__SalonDb: Server=localhost,1433;Database=SalonBooking_Contract;User Id=sa;Password=${{ env.SA_PASSWORD }};TrustServerCertificate=True
+          Jwt__Key: contract-check-signing-key-not-a-real-secret
+        run: |
+          dotnet run --project ZakazivanjeApi > "$RUNNER_TEMP/api.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/api.pid"
+
+      - name: Wait for the document
+        run: |
+          for i in $(seq 1 60); do
+            if curl --silent --fail http://localhost:5056/openapi/v1.json > /dev/null; then
+              echo "The API is answering."
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "The API never served /openapi/v1.json. Its log:"
+          cat "$RUNNER_TEMP/api.log"
+          exit 1
+
+      - name: Regenerate
+        working-directory: web
+        run: |
+          npm ci
+          npm run generate:api
+
+      - name: The committed types must match what was just generated
+        run: |
+          if ! git diff --exit-code -- web/src/api/schema.d.ts; then
+            echo
+            echo "web/src/api/schema.d.ts is out of date with the API."
+            echo "Run 'npm run generate:api' in web/ against a running API and commit the result."
+            echo "Read the diff as a contract change, because that is what it is (ADR-0009)."
+            exit 1
+          fi
+
+      - name: Stop the API
+        if: always()
+        run: kill "$(cat "$RUNNER_TEMP/api.pid")" || true

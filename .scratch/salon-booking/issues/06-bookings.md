@@ -1,6 +1,6 @@
 # 06 - Booking endpoints, concurrency, integration tests
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 04, 05
 

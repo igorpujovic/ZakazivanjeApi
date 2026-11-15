@@ -1,6 +1,6 @@
 # 07 - Error handling, API docs, README
 
-Status: ready-for-agent
+Status: resolved
 Type: task
 Blocked by: 06
 

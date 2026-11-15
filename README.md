@@ -1,5 +1,7 @@
 # Salon Booking API
 
+[![CI](https://github.com/igorpujovic/ZakazivanjeApi/actions/workflows/ci.yml/badge.svg)](https://github.com/igorpujovic/ZakazivanjeApi/actions/workflows/ci.yml)
+
 REST API for a single hair salon. Clients browse services and stylists, see available times
 and book or cancel appointments. Admins manage the catalogue and every booking. A React
 frontend for it lives in [`web/`](web) — see [The web frontend](#the-web-frontend).
@@ -278,6 +280,33 @@ end, so they need a working `(localdb)\mssqllocaldb`. They supply their own conn
 JWT key and admin credentials last, so those win over anything your user-secrets hold and a
 test run never touches your development database.
 
+Point them at a different server with `SALON_TEST_SQLSERVER`, a connection string naming a
+server and how to authenticate against it. The catalogue in it is ignored — the suite still
+names its own database, creates it and drops it — so only the server moves:
+
+```bash
+SALON_TEST_SQLSERVER="Server=localhost,1433;User Id=sa;Password=<password>;TrustServerCertificate=True" \
+  dotnet test
+```
+
+That is how CI runs them, against a SQL Server container, since a Linux runner has no LocalDB.
+
+## Continuous integration
+
+[`.github/workflows/ci.yml`](.github/workflows/ci.yml) runs on every push and pull request to
+`main`, as three jobs:
+
+| Job                                   | What it proves                                                 |
+| ------------------------------------- | --------------------------------------------------------------- |
+| **API**                               | `dotnet test`, against a real SQL Server container               |
+| **Frontend**                          | `npm run lint`, `npm run test`, `npm run build` in `web/`        |
+| **Generated types match the running API** | `schema.d.ts` still describes the API that is actually running |
+
+The third is the one worth having. ADR-0009 declined Blazor, and with it a wire contract the
+compiler checked end to end; what holds the two halves together instead is a regeneration step
+that nothing forces. This job starts the API, runs `npm run generate:api` against it and fails
+if the committed file disagrees — which turns that step from a promise into a check.
+
 ## The web frontend
 
 `web/` is the browser client for this API: clients browse the menu, pick a time and book or
@@ -392,3 +421,7 @@ Times on the wire are local salon wall-clock with no offset (ADR-0001), which Ja
 mishandles in two specific ways; everything date-shaped goes through one module and nothing
 else may construct a `Date` from an API string (ADR-0011). The bearer token is held in
 `sessionStorage` (ADR-0010).
+
+## Licence
+
+MIT — see [`LICENSE`](LICENSE).
