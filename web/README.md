@@ -45,6 +45,9 @@ read that script's header before changing it.
 
 ## Running it with no backend at all
 
+The published demo is at <https://igorpujovic.github.io/ZakazivanjeApi/> — the same build, by
+`.github/workflows/pages.yml`. Locally:
+
 ```bash
 npm install
 npm run dev:mock

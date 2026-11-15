@@ -1,0 +1,90 @@
+# The demo, published.
+#
+# `npm run dev:mock` lets somebody who cloned the repository click through the application with
+# no .NET and no SQL Server (see `web/src/mocks/`). The same build, served from GitHub Pages, is
+# that without the cloning — which is the difference between a reviewer reading about the slot
+# grid and using it.
+#
+# What is published is the mock salon, not the API. There is no server here and no database:
+# a service worker answers every request from a salon held in the visitor's own tab.
+
+name: Demo
+
+on:
+  push:
+    branches: [main]
+
+  # So a demo can be republished without an empty commit — a visitor's bug report is usually
+  # the first anyone hears that something is broken.
+  workflow_dispatch:
+
+# The token this workflow is given may mint a Pages deployment and nothing else.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# One deployment at a time, and a newer push wins. `cancel-in-progress: false` because a
+# half-finished deployment is worse than a slightly stale one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    name: Build and publish the demo
+    runs-on: ubuntu-latest
+
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+
+      - name: Install
+        working-directory: web
+        run: npm ci
+
+      - name: Test
+        # The demo is published only if the application it demonstrates passes its own suite.
+        # CI runs these too; running them here as well keeps this workflow able to say no on
+        # its own rather than trusting that something else already did.
+        working-directory: web
+        run: npm run test
+
+      - uses: actions/configure-pages@v5
+        id: pages
+
+      - name: Build
+        working-directory: web
+        env:
+          # A project site is served from /<repository>/, so every asset URL, the router's
+          # basename and the service worker's scope have to carry that prefix. It comes from
+          # the Pages configuration rather than being written down, so renaming the repository
+          # does not silently publish a demo whose assets all 404.
+          PAGES_BASE: ${{ steps.pages.outputs.base_path }}/
+        run: npm run build:pages
+
+      - name: A 404 that is really the application
+        # GitHub Pages serves static files: it knows index.html and nothing about /book or
+        # /admin/bookings, so opening one of those directly — or reloading on one — would be a
+        # 404. Serving the application as the 404 page hands those addresses to the router,
+        # which does know them. The URL in the address bar is untouched, so the visitor lands
+        # where they asked to.
+        working-directory: web
+        run: cp dist/index.html dist/404.html
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: web/dist
+
+      - name: Deploy
+        id: deploy
+        uses: actions/deploy-pages@v4

@@ -1,6 +1,11 @@
 # Salon Booking API
 
 [![CI](https://github.com/igorpujovic/ZakazivanjeApi/actions/workflows/ci.yml/badge.svg)](https://github.com/igorpujovic/ZakazivanjeApi/actions/workflows/ci.yml)
+[![Demo](https://github.com/igorpujovic/ZakazivanjeApi/actions/workflows/pages.yml/badge.svg)](https://igorpujovic.github.io/ZakazivanjeApi/)
+
+**[Try the frontend in your browser →](https://igorpujovic.github.io/ZakazivanjeApi/)**  
+No sign-up and nothing to install: a demo salon runs in the page itself. Sign in as
+`admin@salon.demo` / `demo` for the staff screens, or register a client account.
 
 REST API for a single hair salon. Clients browse services and stylists, see available times
 and book or cancel appointments. Admins manage the catalogue and every booking. A React
@@ -371,7 +376,10 @@ the API nor a database running.
 
 ### The frontend on its own, with no database
 
-If you only want to look at the frontend, you do not need .NET or SQL Server at all:
+The quickest look is the [published demo](https://igorpujovic.github.io/ZakazivanjeApi/),
+which is this same mock salon built by `.github/workflows/pages.yml` and served from GitHub
+Pages — no server and no database behind it, just the application and a service worker. To run
+it yourself you do not need .NET or SQL Server either:
 
 ```bash
 cd web

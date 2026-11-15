@@ -2,7 +2,23 @@ import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vitest/config'
 
-export default defineConfig({
+/**
+ * Where the application is served from.
+ *
+ * `/` everywhere except the published demo, which is a GitHub Pages *project* site and
+ * therefore lives under `/<repository>/`. Only the `pages` mode builds for that, so
+ * `npm run dev:mock` stays at the root and nothing about ordinary development changes.
+ *
+ * Read from the environment rather than written here, because the repository's name is not
+ * this file's business and a renamed repository should not need a code change: the workflow
+ * passes it in.
+ */
+const baseFor = (mode: string) =>
+  mode === 'pages' ? (process.env.PAGES_BASE ?? '/') : '/'
+
+export default defineConfig(({ mode }) => ({
+  base: baseFor(mode),
+
   plugins: [react(), tailwindcss()],
 
   server: {
@@ -26,4 +42,4 @@ export default defineConfig({
     // Asia/Kolkata (UTC+05:30) breaks naive arithmetic harder than a whole-hour offset would.
     env: { TZ: 'Asia/Kolkata' },
   },
-})
+}))

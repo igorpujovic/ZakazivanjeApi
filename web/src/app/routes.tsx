@@ -69,4 +69,18 @@ export const routes: RouteObject[] = [
   },
 ]
 
-export const router = createBrowserRouter(routes)
+/**
+ * Every address is under this prefix.
+ *
+ * `/` when the application is served from the root of its own origin, which is how it runs
+ * against the API. The published demo is a GitHub Pages *project* site, so it lives under
+ * `/<repository>/` instead, and the router has to be told — otherwise it reads that first
+ * segment as part of the route and answers every address with "Page not found".
+ *
+ * Vite substitutes `BASE_URL` at build time from the `base` in `vite.config.ts`, so this is
+ * one source for the router, the asset URLs and the service worker's scope rather than three
+ * places to keep in step. React Router wants it without the trailing slash.
+ */
+const basename = import.meta.env.BASE_URL.replace(/\/$/, '')
+
+export const router = createBrowserRouter(routes, { basename: basename || '/' })
