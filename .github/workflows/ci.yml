@@ -77,6 +77,29 @@ jobs:
           SALON_TEST_SQLSERVER: Server=localhost,1433;User Id=sa;Password=${{ env.SA_PASSWORD }};TrustServerCertificate=True
         run: dotnet test --no-build --configuration Release --verbosity normal
 
+      - name: Restore local tools
+        run: dotnet tool restore
+
+      - name: The committed schema script must match the migrations
+        # Same guard as the generated TypeScript, for the same reason: docs/schema.sql is
+        # generated, committed, and would otherwise go quietly stale the first time a migration
+        # was added. Needs no database — a migrations script is written offline.
+        #
+        # --ignore-cr-at-eol because this file is generated on whichever platform ran the
+        # command, and a developer on Windows commits CRLF where this runner writes LF. The
+        # claim is about the statements in the file, not about how its lines end.
+        run: |
+          dotnet dotnet-ef migrations script --idempotent \
+            --project ZakazivanjeApi --configuration Release --no-build \
+            --output docs/schema.sql
+          if ! git diff --ignore-cr-at-eol --exit-code -- docs/schema.sql; then
+            echo
+            echo "docs/schema.sql is out of date with the migrations in ZakazivanjeApi/Migrations."
+            echo "Run 'dotnet tool restore' then:"
+            echo "  dotnet dotnet-ef migrations script --idempotent --project ZakazivanjeApi --output docs/schema.sql"
+            exit 1
+          fi
+
   web:
     name: Frontend
     runs-on: ubuntu-latest

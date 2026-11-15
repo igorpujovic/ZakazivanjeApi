@@ -87,8 +87,31 @@ ConnectionStrings__SalonDb="<your connection string>" \
   dotnet ef database update --project ZakazivanjeApi
 ```
 
+`dotnet-ef` is pinned in [`.config/dotnet-tools.json`](.config/dotnet-tools.json), so
+`dotnet tool restore` gets the version this repository was built with rather than whatever is
+installed globally.
+
+If you would rather not run a tool at all, [`docs/schema.sql`](docs/schema.sql) is the whole
+schema as an idempotent script — safe to run against an empty database or one already partly
+migrated, since every statement checks `__EFMigrationsHistory` first. It is generated from the
+migrations, committed, and checked by CI, so it cannot quietly fall behind them:
+
+```bash
+dotnet tool restore
+dotnet dotnet-ef migrations script --idempotent --project ZakazivanjeApi --output docs/schema.sql
+```
+
+The migrations remain the source of truth. The script is a convenience and a way to read the
+schema without running anything.
+
 Then seed: starting the application creates the configured administrator if no user holds
 that email. Running it again changes nothing — an existing account is never overwritten.
+
+In Development it also puts a small sample catalogue — six services and four stylists, the ones
+the screenshots below were taken against — into a catalogue that has none, so a fresh clone has
+a salon in it rather than an empty menu. It is `SampleCatalogue:Enabled` in
+`appsettings.Development.json`, off everywhere else, and it does nothing at all if the
+catalogue already has a single row in it: a salon somebody is curating is left alone.
 
 Order matters outside Development, where the application does not migrate for you: apply the
 migrations before the first start, or seeding will run against a schema that has no `Users`
@@ -345,6 +368,29 @@ there is no way to register as an admin, by design (see [Authentication](#authen
 The frontend's own tests are `npm run test` in `web/`: Vitest over the pure modules, and React
 Testing Library with MSW over the booking page and the admin bookings table. They need neither
 the API nor a database running.
+
+### The frontend on its own, with no database
+
+If you only want to look at the frontend, you do not need .NET or SQL Server at all:
+
+```bash
+cd web
+npm install
+npm run dev:mock
+```
+
+That runs the application against a demo salon in a service worker — `src/mocks/`, built on
+MSW, the same library the tests use. Everything works: browse the menu, register (which chains
+a login, as it does for real), pick a slot from a grid merged across four stylists, book it,
+cancel it, and sign in as `admin@salon.demo` / `demo` to work the day and curate the catalogue.
+The slot rules are the real ones — working hours, a service having to fit inside them, no
+overlapping a stylist, nothing in the past.
+
+The salon lives in the tab: a reload keeps it, closing the tab forgets it. **It is a stand-in,
+not a second implementation.** `ZakazivanjeApi/` is the specification, and where the two
+disagree the C# is right. The one thing the demo cannot stage is the race two clients run for
+the same slot — there is nobody to lose it to — which is why that is proven in
+`pages/bookPage.test.tsx` and photographed below instead.
 
 ### The wire contract
 

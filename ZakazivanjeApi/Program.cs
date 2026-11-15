@@ -45,6 +45,9 @@ builder.Services
 builder.Services.Configure<AdminOptions>(
     builder.Configuration.GetSection(AdminOptions.SectionName));
 
+builder.Services.Configure<SampleCatalogueOptions>(
+    builder.Configuration.GetSection(SampleCatalogueOptions.SectionName));
+
 // A missing or too-short signing key fails the boot rather than producing tokens that cannot be
 // trusted. Jwt:Key is a secret and lives in user-secrets or environment variables, never here.
 builder.Services
@@ -106,6 +109,7 @@ using (var scope = app.Services.CreateScope())
     }
 
     await initializer.SeedAdminAsync();
+    await initializer.SeedSampleCatalogueAsync();
 }
 
 // Configure the HTTP request pipeline.

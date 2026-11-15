@@ -50,6 +50,13 @@ public sealed class SalonApiFactory : WebApplicationFactory<Program>, IAsyncLife
     public const string ServerOverrideVariable = "SALON_TEST_SQLSERVER";
 
     /// <summary>
+    /// Whether this host seeds the sample catalogue, as the shipped development configuration
+    /// does. Off by default, because every other test in the suite states its own catalogue and
+    /// a host that invented six services would change what those tests are asserting against.
+    /// </summary>
+    public bool SeedsSampleCatalogue { get; init; }
+
+    /// <summary>
     /// LocalDB, which the README names as the development prerequisite and which every
     /// developer running this suite already has.
     /// </summary>
@@ -93,6 +100,7 @@ public sealed class SalonApiFactory : WebApplicationFactory<Program>, IAsyncLife
                 ["Admin:Email"] = AdminEmail,
                 ["Admin:Password"] = AdminPassword,
                 ["Cors:AllowedOrigins:0"] = AllowedOrigin,
+                ["SampleCatalogue:Enabled"] = SeedsSampleCatalogue ? "true" : "false",
             }));
 
         // The probe routes, added to the running application rather than built into it, so the

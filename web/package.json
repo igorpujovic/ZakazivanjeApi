@@ -10,7 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "generate:api": "npx -y openapi-typescript@7.13.0 http://localhost:5056/openapi/v1.json -o src/api/schema.d.ts && node scripts/narrow-schema.mjs"
+    "generate:api": "npx -y openapi-typescript@7.13.0 http://localhost:5056/openapi/v1.json -o src/api/schema.d.ts && node scripts/narrow-schema.mjs",
+    "dev:mock": "vite --mode mock",
+    "build:mock": "tsc -b && vite build --mode mock"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",
@@ -37,5 +39,10 @@
     "typescript": "~7.0.2",
     "vite": "^8.3.6",
     "vitest": "^5.1.0"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   }
 }

@@ -32,7 +32,9 @@ npm run dev
 | Script                 | What it does                                                        |
 | ---------------------- | ------------------------------------------------------------------- |
 | `npm run dev`          | Dev server, proxying `/api` and `/openapi` to `localhost:5056`      |
+| `npm run dev:mock`     | The same, against a demo salon in a service worker — **no API needed** |
 | `npm run build`        | Typecheck every project, then build                                 |
+| `npm run build:mock`   | A static build of the demo, for hosting it without an API           |
 | `npm run test`         | Vitest, once                                                        |
 | `npm run lint`         | oxlint                                                              |
 | `npm run generate:api` | Regenerate the API types from a **running** API, then narrow them   |
@@ -40,6 +42,22 @@ npm run dev
 `generate:api` needs the API up: the OpenAPI document is mapped in Development only. It writes
 `src/api/schema.d.ts`, which is committed, and then runs `scripts/narrow-schema.mjs` over it —
 read that script's header before changing it.
+
+## Running it with no backend at all
+
+```bash
+npm install
+npm run dev:mock
+```
+
+No .NET, no SQL Server, nothing to configure. `src/mocks/` answers every request from a salon
+held in the tab, using MSW — the library the tests already use — with the real slot rules:
+working hours, a service having to fit inside them, no overlapping a stylist, nothing in the
+past. Sign in as `admin@salon.demo` / `demo`, or register a client.
+
+Read `src/mocks/salon.ts` before trusting it for anything: it is a stand-in so the application
+can be clicked through, not a second implementation of the API, and where the two disagree the
+C# in `../ZakazivanjeApi/` is right.
 
 ## Three things that will surprise you
 

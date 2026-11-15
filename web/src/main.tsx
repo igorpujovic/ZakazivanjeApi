@@ -30,10 +30,27 @@ const queryClient = new QueryClient({
   },
 })
 
-createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router} />
-    </QueryClientProvider>
-  </StrictMode>,
-)
+/**
+ * In demo mode, the salon is a service worker rather than an API — `npm run dev:mock`, for
+ * reading this repository without installing .NET and SQL Server. See `src/mocks/`.
+ *
+ * Dynamically imported and awaited: dynamically so nothing in `src/mocks/` or MSW is in an
+ * ordinary build, and awaited so the worker is intercepting before the first screen asks
+ * anything. Starting it after render would let the menu's request through to nothing.
+ */
+async function start() {
+  if (import.meta.env.VITE_MOCK_API === 'true') {
+    const { startDemoSalon } = await import('./mocks/browser')
+    await startDemoSalon()
+  }
+
+  createRoot(document.getElementById('root')!).render(
+    <StrictMode>
+      <QueryClientProvider client={queryClient}>
+        <RouterProvider router={router} />
+      </QueryClientProvider>
+    </StrictMode>,
+  )
+}
+
+void start()
