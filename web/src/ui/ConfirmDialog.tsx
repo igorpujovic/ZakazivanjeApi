@@ -104,7 +104,7 @@ export function ConfirmDialog({
           onEscapeKeyDown={(event) => pending && event.preventDefault()}
           onCloseAutoFocus={restoreFocus}
         >
-          <Dialog.Title className="font-display text-xl text-ink">{title}</Dialog.Title>
+          <Dialog.Title className="font-display text-xl font-semibold text-ink">{title}</Dialog.Title>
 
           <Dialog.Description asChild>
             <div className="flex flex-col gap-2 text-sm text-ink-soft">{children}</div>

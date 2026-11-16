@@ -11,10 +11,10 @@ namespace ZakazivanjeApi.Data;
 /// application sees the thing they were just looking at rather than a different salon.
 /// </para>
 /// <para>
-/// Durations and prices are spread on purpose. A half-hour service and a two-and-a-half-hour
-/// one behave visibly differently on the slot grid — the long one is refused far more often as
-/// a day fills, which is the rule about a service having to fit inside working hours doing its
-/// job. A catalogue of six identical haircuts would hide that.
+/// Durations and prices are spread on purpose. A twenty-minute beard trim and a two-hour
+/// "works" behave visibly differently on the slot grid — the long one is refused far more
+/// often as a day fills, which is the rule about a service having to fit inside working hours
+/// doing its job. A catalogue of six identical haircuts would hide that.
 /// </para>
 /// <para>
 /// No bookings. A booking belongs to a client, and inventing clients means inventing accounts
@@ -39,12 +39,12 @@ public static class SampleCatalogue
     /// <summary>Prices in RSD, durations in minutes, as <c>Service</c> means them.</summary>
     public static IReadOnlyList<ServiceRow> Services { get; } =
     [
-        new("Women's Cut", 45, 2500m),
-        new("Men's Cut", 30, 1500m),
-        new("Colouring", 120, 6000m),
-        new("Highlights", 150, 7500m),
-        new("Blow Dry", 30, 1200m),
-        new("Wash and Style", 45, 1800m),
+        new("Haircut", 30, 1200m),
+        new("Skin fade", 45, 1600m),
+        new("Beard trim", 20, 900m),
+        new("Hot towel shave", 45, 1800m),
+        new("Cut and beard", 60, 2300m),
+        new("The works", 120, 3500m),
     ];
 
     /// <summary>Four, so that <b>No preference</b> on the booking page has something to merge.</summary>

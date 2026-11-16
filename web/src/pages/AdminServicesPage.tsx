@@ -50,7 +50,7 @@ export function AdminServicesPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl text-ink">Services</h1>
+        <h1 className="font-display text-3xl font-semibold text-ink">Services</h1>
         <p className="text-sm text-ink-soft">
           What the salon offers, and what it has withdrawn. A withdrawn service stays on every
           booking already made against it.

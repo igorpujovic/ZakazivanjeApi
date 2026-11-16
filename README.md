@@ -275,6 +275,12 @@ rather than the first booking (ADR-0002). A weekday that is `null` or absent is 
 
 There is no public-holiday list and no per-stylist schedule; both are known gaps (ADR-0002).
 
+Nothing publishes these hours: `available-slots` answers with an empty list for a closed day
+and says no more than that. The frontend therefore keeps a mirror of them in
+`web/src/brand/house.ts`, purely so the shop's page can print its opening times — it decides
+what is said, never what is offered. Change the configuration above and that file has to
+follow, or the page will advertise hours the API will not book.
+
 ## Time
 
 All times are local salon wall-clock, never UTC (ADR-0001). "Now" always comes from an

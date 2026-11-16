@@ -51,12 +51,12 @@ const salon = new Salon()
 function seed(): void {
   salon.services = (
     [
-      ["Women's Cut", 45, 2500],
-      ["Men's Cut", 30, 1500],
-      ['Colouring', 120, 6000],
-      ['Highlights', 150, 7500],
-      ['Blow Dry', 30, 1200],
-      ['Wash and Style', 45, 1800],
+      ['Haircut', 30, 1200],
+      ['Skin fade', 45, 1600],
+      ['Beard trim', 20, 900],
+      ['Hot towel shave', 45, 1800],
+      ['Cut and beard', 60, 2300],
+      ['The works', 120, 3500],
     ] as const
   ).map(([name, durationMinutes, price]) => ({
     id: salon.id(),

@@ -5,6 +5,7 @@ import type { Booking } from '../api/dto'
 import { myBookingsQuery } from '../booking/bookingApi'
 import { cancelOffer, groupByWhen, type CancelOffer } from '../booking/myBookings'
 import { useCancelBooking } from '../booking/useCancelBooking'
+import { ServiceIcon } from '../catalogue/serviceIcon'
 import { copyForCode, messageFor } from '../lib/errorCopy'
 import {
   formatDate,
@@ -73,7 +74,7 @@ export function MyBookingsPage() {
        * tells a visitor where they are the last thing to arrive.
        */}
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl text-ink">My bookings</h1>
+        <h1 className="font-display text-3xl font-semibold text-ink">My bookings</h1>
         <p className="text-sm text-ink-soft">
           What you have booked, and what you have had done.
         </p>
@@ -180,7 +181,7 @@ function Group({
 }) {
   return (
     <section aria-label={name} className="flex flex-col gap-3">
-      <h2 className="font-display text-xl text-ink">{name}</h2>
+      <h2 className="font-display text-xl font-semibold text-ink">{name}</h2>
 
       {rows.length === 0 ? (
         <p className="text-sm text-ink-faint">{empty}</p>
@@ -195,6 +196,16 @@ function Group({
       )}
     </section>
   )
+}
+
+/**
+ * The drawing beside a service's name, guessed from that name the way the menu guesses it.
+ *
+ * From the booking's own `serviceName` — the snapshot, not the catalogue — so a row keeps the
+ * icon matching what was agreed even if the service has been renamed since (ADR-0003).
+ */
+function ServiceMark({ name }: { name: string }) {
+  return <ServiceIcon name={name} className="size-4 shrink-0 text-accent" />
 }
 
 /** One booking, and what `myBookings.ts` says is left to do about it. */
@@ -230,6 +241,12 @@ function BookingCard({
     >
       <div className="flex flex-col gap-1">
         <p className="flex flex-wrap items-center gap-2 text-ink">
+          {/*
+           * The same guess the menu makes, from the name the booking itself carries — so a
+           * client recognises last month's appointment by its drawing before they have read
+           * the line. Decoration, and hidden from a screen reader: the name is right there.
+           */}
+          <ServiceMark name={booking.serviceName} />
           {/*
            * The booking's own name and price, not the catalogue's. ADR-0003: a booking records
            * what was agreed, so a service renamed or re-priced since does not rewrite it.

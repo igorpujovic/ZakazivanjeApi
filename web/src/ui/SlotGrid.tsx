@@ -2,6 +2,7 @@ import { useRef } from 'react'
 
 import type { Slot } from '../booking/slots'
 import { addMinutes, formatRange, type WallClock } from '../lib/wallClock'
+import { ClockIcon } from './icons'
 
 /**
  * The starts on offer, as tap targets.
@@ -104,9 +105,12 @@ export function SlotGrid({
         })}
       </div>
 
-      <p className="text-xs text-ink-faint">
-        Times are not held until you confirm — if someone books the same time first, we will
-        show you what is still free.
+      <p className="flex items-start gap-2 text-xs text-ink-faint">
+        <ClockIcon className="mt-px size-3.5 shrink-0 text-accent" />
+        <span>
+          Times are not held until you confirm — if someone books the same time first, we will
+          show you what is still free.
+        </span>
       </p>
     </div>
   )

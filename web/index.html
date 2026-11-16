@@ -2,9 +2,36 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>web</title>
+
+    <!--
+      The shop's name is in `src/brand/house.ts` everywhere else; this is static markup and
+      cannot read it, so the title and the description are the one copy of it that has to be
+      kept in step by hand.
+    -->
+    <title>Kalemegdan Barbers — book a chair</title>
+    <meta
+      name="description"
+      content="Cuts, shaves and beard work in Dorćol, Belgrade. Pick a service, a barber and a time — the whole thing takes a minute."
+    />
+
+    <!-- The navy of the shopfront, for the browser chrome on a phone. -->
+    <meta name="theme-color" content="#1f3b4d" />
+
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+
+    <!--
+      Two faces, loaded rather than hoped for. `index.css` names Inter and Zilla Slab, and
+      until this link existed neither was actually fetched: every heading fell back to Georgia
+      and every line of body copy to the system sans, which is most of why the pages looked
+      like a wireframe of themselves. Three weights of each, which is all the application uses.
+    -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Zilla+Slab:wght@500;600;700&display=swap"
+    />
   </head>
   <body>
     <div id="root"></div>

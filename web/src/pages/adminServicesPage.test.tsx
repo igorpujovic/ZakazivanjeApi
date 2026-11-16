@@ -231,6 +231,11 @@ describe('what a client sees', () => {
         return HttpResponse.json(includeInactive ? all : all.filter((row) => row.isActive))
       }),
 
+      // The menu introduces the chairs as well as the services, so passing through it asks
+      // for the stylists too. Nothing here is about them; they are answered so that the
+      // request is not an unhandled one.
+      api.stylists(() => HttpResponse.json([])),
+
       api.withdrawService(() => {
         onTheMenu = false
         return new HttpResponse(null, { status: 204 })

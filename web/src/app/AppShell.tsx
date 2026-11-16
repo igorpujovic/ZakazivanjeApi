@@ -1,8 +1,12 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 
+import { address, openLabel, openStateAt, shop, weekRuns } from '../brand/house'
 import { useAuth } from '../auth/authContext'
 import { loginPathFor } from '../auth/returnTo'
+import { nowWallClock } from '../lib/wallClock'
 import { Button } from '../ui/Button'
+import { ClockIcon, PhoneIcon, PinIcon } from '../ui/icons'
+import { Wordmark } from '../ui/Logo'
 
 /**
  * The shell both sides of the application share.
@@ -43,8 +47,8 @@ export function AppShell() {
       <header className="border-b border-line bg-surface">
         {/* 16px gutter, mobile first, and never a horizontal page scroll. */}
         <div className="mx-auto flex w-full max-w-5xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-          <NavLink to="/" className="font-display text-2xl text-primary">
-            Salon
+          <NavLink to="/" aria-label={`${shop.name} — home`} className="shrink-0">
+            <Wordmark />
           </NavLink>
 
           <nav aria-label="Main" className="flex flex-wrap items-center gap-1">
@@ -106,6 +110,13 @@ export function AppShell() {
         </div>
       </header>
 
+      {/*
+       * The pole, unrolled. One rule, right under the sign, and the page has said what kind of
+       * shop it is before any copy has been read. Decoration with no information in it, so it
+       * is `aria-hidden` and keeps out of the document for anyone reading by ear.
+       */}
+      <div aria-hidden className="pole-rule h-1.5" />
+
       {/* The five-minute warning. Notice is all there is to offer — see `auth/session.ts`. */}
       {expiryWarningMinutes !== undefined && (
         <p
@@ -122,8 +133,60 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <footer className="border-t border-line px-4 py-4 text-center text-xs text-ink-faint">
-        Times shown are salon local time.
+      {/*
+       * The bottom of a shop's page, with the three things somebody scrolls down looking for:
+       * when it is open, where it is, and the number to ring. All of it from
+       * `brand/house.ts` — the hours collapsed into runs there rather than written out here,
+       * so the footer cannot end up claiming different hours from the shop card on the menu.
+       */}
+      <footer className="mt-10 border-t border-line bg-surface">
+        <div className="mx-auto grid w-full max-w-5xl gap-6 px-4 py-8 sm:grid-cols-3">
+          <div className="flex flex-col gap-2">
+            <p className="font-display text-lg font-semibold tracking-wide text-primary uppercase">
+              {shop.name}
+            </p>
+            <p className="text-sm text-ink-soft">{shop.tagline}</p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h2 className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-accent-ink uppercase">
+              <ClockIcon className="size-4 text-accent" />
+              Hours
+            </h2>
+            <dl className="flex flex-col gap-1 text-sm text-ink-soft">
+              {weekRuns.map((run) => (
+                <div key={run.from} className="flex justify-between gap-3">
+                  <dt>{run.from === run.to ? run.from : `${run.from}–${run.to}`}</dt>
+                  <dd className="tabular-nums">
+                    {run.hours === undefined
+                      ? 'Closed'
+                      : `${run.hours.open}–${run.hours.close}`}
+                  </dd>
+                </div>
+              ))}
+            </dl>
+            <p className="text-xs text-ink-faint">{openLabel(openStateAt(nowWallClock()))}</p>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            <h2 className="flex items-center gap-2 text-xs font-semibold tracking-[0.18em] text-accent-ink uppercase">
+              <PinIcon className="size-4 text-accent" />
+              Find us
+            </h2>
+            <p className="text-sm text-ink-soft">{address}</p>
+            <a
+              href={shop.phoneHref}
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary underline"
+            >
+              <PhoneIcon className="size-4" />
+              {shop.phone}
+            </a>
+          </div>
+        </div>
+
+        <p className="border-t border-line px-4 py-4 text-center text-xs text-ink-faint">
+          Times shown are salon local time.
+        </p>
       </footer>
     </div>
   )

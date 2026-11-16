@@ -158,6 +158,29 @@ export function atStartOfDay(value: WallClockDate): WallClock {
   return `${value}T00:00:00` as WallClock
 }
 
+/**
+ * The time half, as `HH:mm`. The mirror of {@link dateOf}, and string work for the same
+ * reason: `"09:00"` is exactly what the API's working hours are written in, so a time of day
+ * compared against them never has to become a `Date` and can never pick up a zone.
+ */
+export function timeOfDay(value: WallClock): string {
+  return value.slice(11, 16)
+}
+
+/**
+ * Which day of the week a date falls on, `0` for Sunday through `6` for Saturday — the same
+ * numbering `Date.getUTCDay` uses, because that is what computes it.
+ *
+ * Here rather than at the one call site because it is the sort of thing that is wrong by a
+ * day in a timezone, and the private carrier is what keeps it from being: the components go
+ * in as UTC and come back out as UTC, so a visitor in Belgrade and a visitor in Auckland are
+ * told the same weekday about the same date.
+ */
+export function weekdayIndexOf(value: WallClock | WallClockDate): number {
+  const parts = isWallClockDate(value) ? dateParts(value) : partsOf(value as WallClock)
+  return carrier(parts).getUTCDay()
+}
+
 // -- Comparison -------------------------------------------------------------------------
 //
 // Fixed-width and big-endian, so string order is chronological order. No `Date` involved,

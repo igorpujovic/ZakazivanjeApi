@@ -301,7 +301,7 @@ public class ServicesEndpointTests(SalonApiFactory factory)
         string name, int durationMinutes, decimal price, string field)
     {
         var admin = await _client.AdminTokenAsync();
-        var id = await _client.NewServiceAsync("Highlights", admin: admin);
+        var id = await _client.NewServiceAsync("Skin fade", admin: admin);
 
         var response = await _client.PutWithTokenAsync(
             $"/api/services/{id}", admin, new { name, durationMinutes, price, isActive = true });

@@ -112,7 +112,7 @@ export function AdminBookingsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl text-ink">All bookings</h1>
+        <h1 className="font-display text-3xl font-semibold text-ink">All bookings</h1>
         <p className="text-sm text-ink-soft">
           Every booking the salon has taken. Cancelled and completed ones stay in the day — a
           freed hour is worth seeing.

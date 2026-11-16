@@ -21,6 +21,13 @@ A person who performs services. A stylist is a name on the schedule, not someone
 in — stylists have no account and never use the system themselves.
 _Avoid_: Employee, hairdresser, barber, provider, resource
 
+**The shop's own name is not vocabulary.** The salon in `web/src/brand/house.ts` is called
+Kalemegdan Barbers and the menu introduces its stylists under the heading _The chairs_. Both
+are a trade name and a piece of shopfront copy — the words over a door, which a business
+chooses for itself. Neither renames the entity: a stylist is a **Stylist** in every label,
+every column heading and every line of code, and nothing in the application calls one a
+barber.
+
 ### What the salon sells
 
 **Service**:

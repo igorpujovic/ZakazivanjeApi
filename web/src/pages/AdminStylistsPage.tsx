@@ -47,7 +47,7 @@ export function AdminStylistsPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl text-ink">Stylists</h1>
+        <h1 className="font-display text-3xl font-semibold text-ink">Stylists</h1>
         <p className="text-sm text-ink-soft">
           Who the salon can book clients in with. A withdrawn stylist keeps every booking
           already made with them.

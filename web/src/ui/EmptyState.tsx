@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
 
+import { ScissorsIcon } from './icons'
+
 /**
  * Nothing to show, said as an answer rather than a failure.
  *
@@ -20,11 +22,22 @@ export function EmptyState({
   return (
     <div className="flex flex-col items-center gap-3 rounded-panel border border-dashed border-line-strong bg-surface-sunken/50 px-6 py-10 text-center">
       {/*
+        The shop's mark, so an empty area still looks like somewhere rather than like a page
+        that failed to load. `aria-hidden`, like every drawing here: the title says it.
+      */}
+      <span
+        aria-hidden
+        className="grid size-11 place-items-center rounded-full border border-line-strong bg-surface text-accent"
+      >
+        <ScissorsIcon className="size-5" />
+      </span>
+
+      {/*
         A heading, not styled text: this is the title of whatever the visitor is looking at
         instead of the thing they expected, and someone reading the page through a screen
         reader's heading list has as much business finding it as any other title.
       */}
-      <h2 className="font-display text-xl text-ink">{title}</h2>
+      <h2 className="font-display text-xl font-semibold text-ink">{title}</h2>
       {children !== undefined && (
         <p className="max-w-prose text-sm text-ink-soft">{children}</p>
       )}

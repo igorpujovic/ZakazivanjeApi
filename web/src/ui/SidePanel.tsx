@@ -79,7 +79,7 @@ export function SidePanel({
           onCloseAutoFocus={restoreFocus}
         >
           <header className="flex flex-col gap-1">
-            <Dialog.Title className="font-display text-2xl text-ink">{title}</Dialog.Title>
+            <Dialog.Title className="font-display text-2xl font-semibold text-ink">{title}</Dialog.Title>
             <Dialog.Description className="text-sm text-ink-soft">
               {description}
             </Dialog.Description>

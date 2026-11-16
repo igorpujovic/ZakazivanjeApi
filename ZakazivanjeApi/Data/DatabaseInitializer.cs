@@ -83,7 +83,7 @@ public class DatabaseInitializer(
     /// <para>
     /// Idempotent by emptiness rather than by name: a single existing service or stylist means
     /// somebody is curating this catalogue, and the answer is then to leave it alone entirely.
-    /// Topping it up row by row would put "Blow Dry" back for an admin who had withdrawn it,
+    /// Topping it up row by row would put "Beard trim" back for an admin who had withdrawn it,
     /// which is the application overruling a decision a person made.
     /// </para>
     /// <para>

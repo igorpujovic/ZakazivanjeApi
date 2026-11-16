@@ -74,61 +74,75 @@ export function RegisterPage() {
 
   return (
     <div className="mx-auto w-full max-w-sm">
-      <h1 className="font-display text-3xl text-ink">Create an account</h1>
+      {/*
+       * The form on headed paper. The striped rule along the top is the shop's, the same
+       * one the header and the menu card carry: a sign-in page is where an application
+       * usually stops looking like itself, and a visitor sent here by a guard should still
+       * be able to see whose door they are standing at.
+       */}
+      <div className="overflow-hidden rounded-panel border border-line bg-surface">
+        <div aria-hidden className="pole-rule h-1.5" />
+        <div className="flex flex-col p-5 sm:p-6">
+          <h1 className="font-display text-3xl font-semibold text-ink">Create an account</h1>
+          <p className="mt-1 text-sm text-ink-soft">
+            A name, an email and a password. That is the whole of it.
+          </p>
 
-      {form.message !== undefined && (
-        <p role="alert" className="mt-4 rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">
-          {form.message}
-        </p>
-      )}
+          {form.message !== undefined && (
+            <p role="alert" className="mt-4 rounded-lg bg-danger-soft px-4 py-3 text-sm text-danger">
+              {form.message}
+            </p>
+          )}
 
-      <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
-        <Field
-          label="Name"
-          autoComplete="name"
-          required
-          minLength={limits.register.nameMin}
-          maxLength={limits.register.nameMax}
-          value={name}
-          onChange={(event) => setName(event.target.value)}
-          errors={form.fieldErrors.name}
-        />
+          <form onSubmit={onSubmit} className="mt-6 flex flex-col gap-4">
+            <Field
+              label="Name"
+              autoComplete="name"
+              required
+              minLength={limits.register.nameMin}
+              maxLength={limits.register.nameMax}
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+              errors={form.fieldErrors.name}
+            />
 
-        <Field
-          label="Email"
-          type="email"
-          autoComplete="email"
-          required
-          maxLength={limits.register.emailMax}
-          value={email}
-          onChange={(event) => setEmail(event.target.value)}
-          errors={form.fieldErrors.email}
-        />
+            <Field
+              label="Email"
+              type="email"
+              autoComplete="email"
+              required
+              maxLength={limits.register.emailMax}
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              errors={form.fieldErrors.email}
+            />
 
-        <Field
-          label="Password"
-          type="password"
-          autoComplete="new-password"
-          required
-          minLength={limits.register.passwordMin}
-          maxLength={limits.register.passwordMax}
-          hint={`At least ${limits.register.passwordMin} characters.`}
-          value={password}
-          onChange={(event) => setPassword(event.target.value)}
-          errors={form.fieldErrors.password}
-        />
+            <Field
+              label="Password"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={limits.register.passwordMin}
+              maxLength={limits.register.passwordMax}
+              hint={`At least ${limits.register.passwordMin} characters.`}
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              errors={form.fieldErrors.password}
+            />
 
-        <Button type="submit" disabled={form.submitting}>
-          {form.submitting ? 'Creating your account…' : 'Create account'}
-        </Button>
-      </form>
+            <Button type="submit" disabled={form.submitting}>
+              {form.submitting ? 'Creating your account…' : 'Create account'}
+            </Button>
+          </form>
 
-      <p className="mt-6 text-sm text-ink-soft">
-        Already have an account?{' '}
-        <Link to={`/login${location.search}`} className="font-medium text-primary underline">
-          Sign in
-        </Link>
-      </p>
+          <p className="mt-6 text-sm text-ink-soft">
+            Already have an account?{' '}
+            <Link to={`/login${location.search}`} className="font-medium text-primary underline">
+              Sign in
+            </Link>
+          </p>
+        </div>
+      </div>
     </div>
   )
 }

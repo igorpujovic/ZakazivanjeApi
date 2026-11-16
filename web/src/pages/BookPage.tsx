@@ -28,6 +28,7 @@ import { Button } from '../ui/Button'
 import { EmptyState } from '../ui/EmptyState'
 import { Field } from '../ui/Field'
 import { NativeSelect } from '../ui/NativeSelect'
+import { ClockIcon, ScissorsIcon } from '../ui/icons'
 import { SlotGrid } from '../ui/SlotGrid'
 
 /**
@@ -160,7 +161,11 @@ export function BookPage() {
   return (
     <div className="flex flex-col gap-6">
       <header className="flex flex-col gap-1">
-        <h1 className="font-display text-3xl text-ink">Book an appointment</h1>
+        <p className="flex items-center gap-2 text-xs font-semibold tracking-[0.2em] text-accent-ink uppercase">
+          <ScissorsIcon className="size-4 text-accent" />
+          Three choices: what, who and when
+        </p>
+        <h1 className="font-display text-3xl font-semibold text-ink">Book an appointment</h1>
         <p className="text-sm text-ink-soft">
           Pick what you are coming in for, who with, and when.
         </p>
@@ -172,48 +177,57 @@ export function BookPage() {
         </p>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <NativeSelect
-          label="Service"
-          value={selection.serviceId ?? ''}
-          onChange={(event) => choose({ serviceId: asChosenId(event.target.value) })}
-        >
-          <option value="">Choose a service</option>
-          {services.data?.map((candidate) => (
-            <option key={candidate.id} value={candidate.id}>
-              {candidate.name} · {formatDuration(candidate.durationMinutes)} ·{' '}
-              {formatMoney(candidate.price)}
-            </option>
-          ))}
-        </NativeSelect>
+      {/*
+       * The three controls, on paper rather than loose on the page. A card with the shop's
+       * striped rule along its top edge: the same device as the header and the menu's
+       * shopfront, which is what ties the pages together without any of them repeating a logo.
+       */}
+      <div className="overflow-hidden rounded-panel border border-line bg-surface">
+        <div aria-hidden className="pole-rule h-1" />
 
-        <NativeSelect
-          label="Stylist"
-          value={selection.stylistId ?? ''}
-          hint={selection.stylistId === undefined ? 'We will show whoever is free.' : undefined}
-          onChange={(event) => choose({ stylistId: asChosenId(event.target.value) })}
-        >
-          {/* The default, and the one thing the API cannot answer on its own. */}
-          <option value="">No preference</option>
-          {stylists.data?.map((candidate) => (
-            <option key={candidate.id} value={candidate.id}>
-              {candidate.name}
-            </option>
-          ))}
-        </NativeSelect>
+        <div className="grid gap-4 p-4 sm:grid-cols-3 sm:p-5">
+          <NativeSelect
+            label="Service"
+            value={selection.serviceId ?? ''}
+            onChange={(event) => choose({ serviceId: asChosenId(event.target.value) })}
+          >
+            <option value="">Choose a service</option>
+            {services.data?.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.name} · {formatDuration(candidate.durationMinutes)} ·{' '}
+                {formatMoney(candidate.price)}
+              </option>
+            ))}
+          </NativeSelect>
 
-        <Field
-          label="Day"
-          type="date"
-          /*
-           * The browser's own calendar, with `min` at today. An approximation of the salon's
-           * today — see `nowWallClock` — and only ever a default: the API refuses a start in
-           * the past itself, and this page recovers from that answer like any other.
-           */
-          min={todayWallClockDate()}
-          value={selection.date ?? ''}
-          onChange={(event) => choose({ date: asChosenDate(event.target.value) })}
-        />
+          <NativeSelect
+            label="Stylist"
+            value={selection.stylistId ?? ''}
+            hint={selection.stylistId === undefined ? 'We will show whoever is free.' : undefined}
+            onChange={(event) => choose({ stylistId: asChosenId(event.target.value) })}
+          >
+            {/* The default, and the one thing the API cannot answer on its own. */}
+            <option value="">No preference</option>
+            {stylists.data?.map((candidate) => (
+              <option key={candidate.id} value={candidate.id}>
+                {candidate.name}
+              </option>
+            ))}
+          </NativeSelect>
+
+          <Field
+            label="Day"
+            type="date"
+            /*
+             * The browser's own calendar, with `min` at today. An approximation of the salon's
+             * today — see `nowWallClock` — and only ever a default: the API refuses a start in
+             * the past itself, and this page recovers from that answer like any other.
+             */
+            min={todayWallClockDate()}
+            value={selection.date ?? ''}
+            onChange={(event) => choose({ date: asChosenDate(event.target.value) })}
+          />
+        </div>
       </div>
 
       {shown !== undefined && (
@@ -236,7 +250,8 @@ export function BookPage() {
       )}
 
       {view === 'choose' && (
-        <p className="text-sm text-ink-soft">
+        <p className="flex items-center gap-2 text-sm text-ink-soft">
+          <ClockIcon className="size-4 shrink-0 text-accent" />
           Choose a service and a day, and the free times will appear here.
         </p>
       )}
@@ -297,27 +312,35 @@ export function BookPage() {
         slots.durationMinutes !== undefined && (
           <section
             aria-label="Your pick"
-            className="sticky bottom-0 flex flex-col gap-3 rounded-panel border border-line-strong bg-surface p-4 shadow-lg sm:flex-row sm:items-center sm:justify-between"
+            className="sticky bottom-0 overflow-hidden rounded-panel border border-line-strong bg-surface shadow-lg"
           >
-            <p className="text-sm text-ink">
-              <span className="font-medium tabular-nums">
-                {formatRange(pick.start, addMinutes(pick.start, slots.durationMinutes))}
-              </span>{' '}
-              with {pick.stylistName}
-              {selection.date !== undefined && (
-                <>
-                  {', '}
-                  {formatWeekday(selection.date)} {formatDate(selection.date)}
-                </>
-              )}
-            </p>
+            {/* The ticket's torn edge, in the shop's stripes. */}
+            <div aria-hidden className="pole-rule h-1" />
 
-            <Button
-              disabled={confirmBooking.isPending}
-              onClick={() => confirmBooking.confirm(pick, chosenService.id)}
-            >
-              {confirmBooking.isPending ? 'Confirming…' : 'Confirm booking'}
-            </Button>
+            <div className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between">
+              <p className="flex items-start gap-2 text-sm text-ink">
+                <ScissorsIcon className="mt-0.5 size-4 shrink-0 text-accent" />
+                <span>
+                  <span className="font-medium tabular-nums">
+                    {formatRange(pick.start, addMinutes(pick.start, slots.durationMinutes))}
+                  </span>{' '}
+                  with {pick.stylistName}
+                  {selection.date !== undefined && (
+                    <>
+                      {', '}
+                      {formatWeekday(selection.date)} {formatDate(selection.date)}
+                    </>
+                  )}
+                </span>
+              </p>
+
+              <Button
+                disabled={confirmBooking.isPending}
+                onClick={() => confirmBooking.confirm(pick, chosenService.id)}
+              >
+                {confirmBooking.isPending ? 'Confirming…' : 'Confirm booking'}
+              </Button>
+            </div>
           </section>
         )}
     </div>

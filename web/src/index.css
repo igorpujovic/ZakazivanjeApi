@@ -1,38 +1,58 @@
 @import 'tailwindcss';
 
 /*
- * The salon palette. Warm neutrals with an aubergine primary and a muted brass accent —
- * a hair salon, not a SaaS dashboard.
+ * The barbershop palette: navy, brass and warm paper, with the red of the pole kept for the
+ * pole itself.
+ *
+ * It is a shop, not a SaaS dashboard, and the colours are the ones a barbershop already owns —
+ * the navy of a shopfront, the brass of the fittings, the cream of a tiled wall, and the red
+ * and white of the pole turning in the window. Navy carries every action, brass carries the
+ * trim and the small capitals, and the red appears only in the striped rule, where it means
+ * *barber* and nothing else. A third colour on a button would turn the signature into noise.
+ *
+ * Two inks for the brass, because one would not do both jobs: `accent` is the brass as a
+ * drawn thing — a rule, a border, an icon — and `accent-ink` is dark enough to be *read* as
+ * small text on paper, which the lighter one is not.
  *
  * No dark mode, deliberately: a salon's booking page has no business following the visitor's
  * OS theme, and half-done dark mode looks worse than none (see spec, "Styling").
  */
 @theme {
-  --color-ink: #1c1419;
-  --color-ink-soft: #5b4f57;
-  --color-ink-faint: #8d8189;
+  --color-ink: #17120f;
+  --color-ink-soft: #544a43;
+  --color-ink-faint: #897c73;
 
-  --color-canvas: #fdfbf9;
+  --color-canvas: #fbf7f2;
   --color-surface: #ffffff;
-  --color-surface-sunken: #f6f1ee;
+  --color-surface-sunken: #f4ece2;
 
-  --color-line: #e7ddd8;
-  --color-line-strong: #d4c6bf;
+  --color-line: #e8ded2;
+  --color-line-strong: #d3c4b3;
 
-  --color-primary: #5c2a4d;
-  --color-primary-hover: #4a2240;
-  --color-primary-soft: #f3e7ef;
+  --color-primary: #1f3b4d;
+  --color-primary-hover: #152a38;
+  --color-primary-soft: #e7eef3;
 
-  --color-accent: #a67c52;
-  --color-accent-soft: #f7efe6;
+  --color-accent: #b08043;
+  --color-accent-ink: #7d5420;
+  --color-accent-soft: #f9f1e4;
 
-  --color-danger: #9b2c2c;
-  --color-danger-soft: #fbeaea;
+  --color-danger: #96241f;
+  --color-danger-soft: #fbeae7;
   --color-success: #2f6b4f;
   --color-success-soft: #e8f2ec;
 
+  /* The pole. Decorative only — never a status, never a button. */
+  --color-pole: #b33029;
+
   --font-sans: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
-  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+
+  /*
+   * A Clarendon-ish slab, which is the lettering trade signage has used since there were
+   * barbershops to letter. It replaces the garden-party serif that was here: the same page,
+   * two fonts apart, reads as a different kind of business.
+   */
+  --font-display: 'Zilla Slab', Rockwell, Georgia, 'Times New Roman', serif;
 
   --radius-panel: 0.75rem;
 }
@@ -62,5 +82,56 @@
   textarea {
     font: inherit;
     color: inherit;
+  }
+}
+
+/*
+ * The shop's three textures. Each one is a gradient rather than an image: nothing to download,
+ * nothing to go missing, and they scale with the element instead of tiling at one fixed size.
+ */
+@layer components {
+  /*
+   * The pole, unrolled into a rule. Under the header, along the top of a card, across the
+   * footer — the one piece of decoration that says what kind of shop this is before a word of
+   * copy has been read.
+   */
+  .pole-rule {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--color-pole) 0 0.5rem,
+      #ffffff 0.5rem 1rem,
+      var(--color-primary) 1rem 1.5rem,
+      #ffffff 1.5rem 2rem
+    );
+  }
+
+  /* The brass half of the same idea, for a rule that should be quieter. */
+  .brass-rule {
+    background-image: linear-gradient(
+      to right,
+      var(--color-accent) 0%,
+      var(--color-accent) 35%,
+      color-mix(in srgb, var(--color-accent) 25%, transparent) 100%
+    );
+  }
+
+  /* Ticking, as on a barber's cape: a hairline stripe behind the hero and the shop card. */
+  .pinstripe {
+    background-image: repeating-linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--color-accent) 22%, transparent) 0 1px,
+      transparent 1px 0.625rem
+    );
+  }
+
+  /*
+   * A price list's dotted leader, between the name of a thing and what it costs. The detail
+   * that makes a list of services read as a menu rather than as rows in a table.
+   */
+  .leader {
+    flex: 1 1 auto;
+    min-width: 1.5rem;
+    align-self: center;
+    border-bottom: 1px dotted var(--color-line-strong);
   }
 }

@@ -77,5 +77,26 @@ maps each refusal to what the UI should do about it.
 `RegisterPage` chains a login with the credentials already in memory. Two requests for one
 button, deliberate on both sides.
 
+## The shopfront
+
+The shop's own details — its name, its address, its phone number, its opening hours — live in
+`src/brand/house.ts` and nowhere else. Rename the shop or move it, and the header, the menu,
+the footer and the page title follow. (The title and the description in `index.html` are the
+exception: static markup cannot read a module, so those two are kept in step by hand.)
+
+**The hours in that file are a mirror of the API's configuration, and only a mirror.** The API
+publishes no opening hours — `WorkingHours:Days` in `../ZakazivanjeApi/appsettings.json` is
+server-side configuration, and `available-slots` simply answers with nothing for a day the shop
+is shut (ADR-0002) — so a page that prints "Saturday 09:00–14:00" has to hold its own copy. It
+decides what is *said*, never what is *offered*: every time on offer still comes from the API,
+and where the two disagree the API is right. Same arrangement as `src/lib/limits.ts` with
+`CatalogueLimits.cs`. `src/brand/house.test.ts` pins the pair of numbers that would drift.
+
+The drawings beside each service are guessed from the service's name by
+`src/catalogue/serviceIcon.ts` — a beard trim gets a beard, anything unrecognised gets
+scissors. The icons themselves are hand-drawn in `src/ui/icons.tsx` rather than installed, for
+the same reason the primitives are hand-built, and every one of them is `aria-hidden`: the
+name beside it is what a visitor actually reads.
+
 The root [`README.md`](../README.md#the-web-frontend) has the rest: running both halves,
 regenerating the types, the mobile-first-client / desktop-first-admin split, and screenshots.
